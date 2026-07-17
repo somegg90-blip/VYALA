@@ -1,0 +1,17 @@
+rules:
+  - id: pqc-jwt-vulnerable-algorithm-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: "JWT signed/verified with a quantum-vulnerable algorithm (RS256/ES256 family)."
+    metadata:
+      category: jwt_algorithm_usage
+      algorithm: RSA/ECDSA
+      suggested_replacement: "No PQC-standard JWT algorithm exists yet in mainstream libraries — flag for manual tracking and plan migration once ML-DSA-based JWT algs are standardized."
+    pattern-either:
+      - pattern: "jwt.sign($PAYLOAD, $KEY, {algorithm: \"RS256\", ...})"
+      - pattern: "jwt.sign($PAYLOAD, $KEY, {algorithm: \"RS384\", ...})"
+      - pattern: "jwt.sign($PAYLOAD, $KEY, {algorithm: \"RS512\", ...})"
+      - pattern: "jwt.sign($PAYLOAD, $KEY, {algorithm: \"ES256\", ...})"
+      - pattern: "jwt.sign($PAYLOAD, $KEY, {algorithm: \"ES384\", ...})"
+      - pattern: crypto.createSign("RSA-SHA256")
+      - pattern: crypto.createSign('RSA-SHA256')

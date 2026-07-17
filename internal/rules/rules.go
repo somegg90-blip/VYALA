@@ -9,7 +9,6 @@ import (
 //go:embed *.yaml
 var rulesFS embed.FS
 
-// ExtractToTemp writes all embedded rules to a temp dir and returns its path.
 func ExtractToTemp() (string, error) {
 	dir, err := os.MkdirTemp("", "pqc-rules")
 	if err != nil {
