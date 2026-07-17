@@ -1,0 +1,14 @@
+rules:
+  - id: pqc-rsa-signing-usage-python
+    languages: [python]
+    severity: WARNING
+    message: "RSA signing/verification detected — quantum-vulnerable. Migrate to ML-DSA (FIPS 204)."
+    metadata:
+      category: rsa_signing_usage
+      algorithm: RSA
+      suggested_replacement: "Replace RSA signing with ML-DSA (Dilithium, FIPS 204), or a hybrid RSA+ML-DSA scheme during transition. See liboqs-python."
+    pattern-either:
+      - pattern: $KEY.sign($MSG, padding.PKCS1v15(), $HASH)
+      - pattern: $KEY.sign($MSG, padding.PSS(...), $HASH)
+      - pattern: $KEY.verify($SIG, $MSG, padding.PKCS1v15(), $HASH)
+      - pattern: $KEY.verify($SIG, $MSG, padding.PSS(...), $HASH)
