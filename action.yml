@@ -1,0 +1,28 @@
+name: 'VYALA PQC Scan'
+description: 'Post-quantum cryptography vulnerability scan for pull requests.'
+author: 'VYALA'
+branding:
+  icon: 'shield'
+  color: 'purple'
+
+inputs:
+  severity-threshold:
+    description: 'Minimum severity to show in comment detail (high|medium|low)'
+    required: false
+    default: 'medium'
+  fail-on:
+    description: 'Severity level that will cause the check to fail (high|medium|low)'
+    required: false
+    default: ''
+  github-token:
+    description: 'GitHub token for PR comments'
+    required: false
+    default: ${{ github.token }}
+
+runs:
+  using: 'docker'
+  image: 'Dockerfile'
+  env:
+    GITHUB_TOKEN: ${{ inputs.github-token }}
+    INPUT_SEVERITY_THRESHOLD: ${{ inputs.severity-threshold }}
+    INPUT_FAIL_ON: ${{ inputs.fail-on }}

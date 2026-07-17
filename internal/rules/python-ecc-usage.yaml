@@ -1,0 +1,18 @@
+rules:
+  - id: pqc-ecc-classical-python
+    languages: [python]
+    message: "Classical ECC usage (ECDSA/ECDH) detected – not quantum-resistant unless paired with a PQC hybrid"
+    severity: WARNING
+    pattern-either:
+      - pattern: ec.generate_private_key(...)
+      - pattern: ec.ECDSA(...)
+      - pattern: ec.ECDH(...)
+      - pattern: ecdsa.SigningKey.generate(...)
+      - pattern: ecdsa.VerifyingKey.from_public_point(...)
+    metadata:
+      category: classical_ecc
+      algorithm: ECDSA/ECDH (classical curve)
+      suggested_replacement: "Use ML-DSA (Dilithium) or SLH-DSA (SPHINCS+) for signing, or a hybrid ECDH+Kyber for key exchange. Liboqs-python provides bindings."
+    paths:
+      include:
+        - "*.py"

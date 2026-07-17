@@ -1,0 +1,23 @@
+name: VYALA PQC Scan (PR)
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+  pull-requests: write
+
+jobs:
+  scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout full repo history
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0   # needed by diffscan to compare against base commit
+
+      - name: Run VYALA scan
+        uses: ./           # Runs the action from the repo root (Dockerfile-based)
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}

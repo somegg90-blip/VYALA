@@ -1,0 +1,20 @@
+rules:
+  - id: pqc-ecc-classical-javascript
+    languages: [javascript, typescript]
+    message: "Classical ECC (ECDSA/ECDH) usage – not quantum-resistant unless part of a hybrid"
+    severity: WARNING
+    pattern-either:
+      - pattern: crypto.generateKeyPair('ec', ...)
+      - pattern: crypto.generateKeyPair("ec", ...)
+      - pattern: "subtle.generateKey({name: 'ECDSA',...}, ...)"
+      - pattern: "subtle.generateKey({name: 'ECDH',...}, ...)"
+    metadata:
+      category: classical_ecc
+      algorithm: ECDSA/ECDH (classical curve)
+      suggested_replacement: "Adopt ML-DSA or a hybrid ECDH+Kyber construction. For Node.js, consider node-pqcrypto or a WASM-based liboqs."
+    paths:
+      include:
+        - "*.js"
+        - "*.ts"
+        - "*.jsx"
+        - "*.tsx"
