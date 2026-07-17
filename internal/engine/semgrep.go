@@ -14,9 +14,9 @@ import (
 )
 
 type semgrepMetadata struct {
-	Algorithm            string `json:"algorithm"`
-	Category             string `json:"category"`
-	SuggestedReplacement string `json:"suggested_replacement"`
+	Algorithm             string `json:"algorithm"`
+	Category              string `json:"category"`
+	SuggestedReplacement  string `json:"suggested_replacement"`
 }
 
 type semgrepExtra struct {
@@ -72,10 +72,19 @@ func Scan(repoRoot string, targets []string) (findings.CBOM, error) {
 		return findings.CBOM{}, fmt.Errorf("parsing semgrep output: %w (stderr: %s)", err, stderr.String())
 	}
 
-	cbom := findings.CBOM{Version: findings.SchemaVersion, Generated: time.Now().UTC(), Findings: []findings.Finding{}}
+	cbom := findings.CBOM{
+		Version:   findings.SchemaVersion,
+		Generated: time.Now().UTC(),
+		Findings:  []findings.Finding{},
+	}
 	for _, r := range parsed.Results {
 		relPath := findings.NormalizeRelPath(repoRoot, r.Path)
 		sev := severity.Classify(relPath)
+
+		if r.Extra.Metadata.Category == "key_loading" {
+			sev = "low"
+		}
+
 		stableRuleID := normalizeCheckID(r.CheckID)
 		cbom.Findings = append(cbom.Findings, findings.Finding{
 			ID:                   findings.GenerateFindingID(stableRuleID, relPath, r.Start.Line),

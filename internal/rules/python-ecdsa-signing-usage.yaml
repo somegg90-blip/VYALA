@@ -1,0 +1,12 @@
+rules:
+  - id: pqc-ecdsa-signing-usage-python
+    languages: [python]
+    severity: WARNING
+    message: "ECDSA signing/verification detected — quantum-vulnerable. Migrate to ML-DSA or SLH-DSA (FIPS 204/205)."
+    metadata:
+      category: ecdsa_signing_usage
+      algorithm: ECDSA
+      suggested_replacement: "Replace with ML-DSA (Dilithium) or SLH-DSA (SPHINCS+), or hybrid ECDH+Kyber for key exchange."
+    pattern-either:
+      - pattern: $KEY.sign($MSG, ECDSA($HASH))
+      - pattern: $KEY.verify($SIG, $MSG, ECDSA($HASH))

@@ -1,0 +1,14 @@
+rules:
+  - id: pqc-key-loading-python
+    languages: [python]
+    severity: INFO
+    message: "Asymmetric key material loaded — verify the underlying key type (RSA/EC) has a PQC migration plan."
+    metadata:
+      category: key_loading
+      algorithm: unknown
+      suggested_replacement: "Confirm key type and cross-reference with your CBOM migration roadmap."
+    pattern-either:
+      - pattern: load_pem_private_key(...)
+      - pattern: load_pem_public_key(...)
+      - pattern: load_der_private_key(...)
+      - pattern: load_der_public_key(...)
