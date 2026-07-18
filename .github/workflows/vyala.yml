@@ -6,18 +6,25 @@ on:
 
 permissions:
   contents: read
-  pull-requests: write
+  pull-requests: read   # safe for forks – no write
 
 jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-      - name: Checkout full repo history
-        uses: actions/checkout@v4
+      - uses: actions/checkout@v4
         with:
-          fetch-depth: 0   # needed by diffscan to compare against base commit
+          fetch-depth: 0
 
-      - name: Run VYALA scan
-        uses: ./           # Runs the action from the repo root (Dockerfile-based)
+      - name: Run VYALA scan (no comment on fork PRs)
+        uses: ./
         with:
+          post-comment: false
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Upload CBOM artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: vyala-cbom-${{ github.event.pull_request.number }}
+          path: /tmp/vyala-cbom.json
+          retention-days: 1

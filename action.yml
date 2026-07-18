@@ -18,6 +18,10 @@ inputs:
     description: 'GitHub token for PR comments'
     required: false
     default: ${{ github.token }}
+  post-comment:
+    description: 'Whether to post/update a PR comment (set to false for fork PRs)'
+    required: false
+    default: 'true'
 
 runs:
   using: 'docker'
@@ -26,3 +30,4 @@ runs:
     GITHUB_TOKEN: ${{ inputs.github-token }}
     INPUT_SEVERITY_THRESHOLD: ${{ inputs.severity-threshold }}
     INPUT_FAIL_ON: ${{ inputs.fail-on }}
+    POST_PR_COMMENT: ${{ inputs.post-comment }}
