@@ -30,7 +30,7 @@ ARGS=(
   -path "${GITHUB_WORKSPACE}"
   -diff-base "${BASE_SHA}"
   -severity-threshold "${INPUT_SEVERITY_THRESHOLD:-medium}"
-  -json /tmp/vyala-cbom.json
+  -json /github/workspace/vyala-cbom.json
 )
 
 if [ "${POST_PR_COMMENT:-true}" = "true" ]; then

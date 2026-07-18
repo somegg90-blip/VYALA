@@ -6,7 +6,8 @@ on:
 
 permissions:
   contents: read
-  pull-requests: read   # safe for forks – no write
+  pull-requests: read
+  actions: write
 
 jobs:
   scan:
@@ -25,6 +26,6 @@ jobs:
       - name: Upload CBOM artifact
         uses: actions/upload-artifact@v4
         with:
-          name: vyala-cbom-${{ github.event.pull_request.number }}
-          path: /tmp/vyala-cbom.json
+          name: vyala-cbom-${{ github.run_id }}
+          path: vyala-cbom.json
           retention-days: 1

@@ -9,6 +9,7 @@ on:
 permissions:
   pull-requests: write
   actions: read
+  packages: read
 
 jobs:
   comment:
@@ -19,7 +20,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: vyala-cbom-${{ github.event.workflow_run.pull_requests[0].number }}
-          path: /tmp
+          path: ./
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
@@ -30,6 +31,6 @@ jobs:
           severity-threshold: medium
           post-comment: true
         env:
-          CBOM_FILE: /tmp/vyala-cbom.json
+          CBOM_FILE: vyala-cbom.json
           PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
           HEAD_SHA: ${{ github.event.workflow_run.pull_requests[0].head.sha }}
