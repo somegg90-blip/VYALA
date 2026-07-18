@@ -20,9 +20,10 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: vyala-cbom-${{ github.event.workflow_run.pull_requests[0].number }}
-          path: /tmp
+          path: ${{ github.workspace }}
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
       - name: Post PR comment using prebuilt action image
         uses: docker://ghcr.io/somegg90-blip/vyala-action:latest
         with:
@@ -30,6 +31,6 @@ jobs:
           severity-threshold: medium
           post-comment: true
         env:
-          CBOM_FILE: /tmp/vyala-cbom.json
+          CBOM_FILE: /github/workspace/vyala-cbom.json
           PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
           HEAD_SHA: ${{ github.event.workflow_run.pull_requests[0].head.sha }}
