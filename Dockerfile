@@ -13,4 +13,5 @@ RUN apt-get update \
 COPY --from=build /vyala /usr/local/bin/vyala
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh /usr/local/bin/vyala
-ENTRYPOINT ["/entrypoint.sh"]# Force rebuild 2026-07-18
+# Force rebuild 2026-07-18
+ENTRYPOINT ["/entrypoint.sh"]
