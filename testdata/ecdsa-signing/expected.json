@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-07-18T08:40:42.671726391Z",
+  "findings": [
+    {
+      "finding_id": "vy-9f966ef5faee5e4f",
+      "file": "algorithms.py",
+      "line": 6,
+      "algorithm": "ECDSA",
+      "severity": "medium",
+      "category": "ecdsa_signing_usage",
+      "hnd_exposure_estimate": "Internal / not matched to an external-facing path convention",
+      "suggested_replacement": "Replace with ML-DSA (Dilithium) or SLH-DSA (SPHINCS+), or hybrid ECDH+Kyber for key exchange.",
+      "rule_id": "pqc-ecdsa-signing-usage-python"
+    }
+  ]
+}

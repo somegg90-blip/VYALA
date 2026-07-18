@@ -1,0 +1,17 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-07-18T08:40:09.266644718Z",
+  "findings": [
+    {
+      "finding_id": "vy-a113aba8dc105903",
+      "file": "test.py",
+      "line": 3,
+      "algorithm": "RSA",
+      "severity": "medium",
+      "category": "rsa_keygen",
+      "hnd_exposure_estimate": "Internal / not matched to an external-facing path convention",
+      "suggested_replacement": "Replace with ML-KEM (e.g., CRYSTALS-Kyber) using a hybrid construction. For Python: consider liboqs-python with hybrid key exchange.",
+      "rule_id": "pqc-rsa-keygen-python"
+    }
+  ]
+}
