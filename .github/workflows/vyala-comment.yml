@@ -19,9 +19,9 @@ jobs:
       - name: Download CBOM artifact from the triggering scan workflow
         uses: actions/download-artifact@v4
         with:
-          name: vyala-cbom-${{ github.event.workflow_run.pull_requests[0].number }}
+          name: vyala-cbom-${{ github.event.workflow_run.id }}
           path: /tmp
-          run-id: ${{ github.event.workflow_run.id }}   # <-- key fix
+          run-id: ${{ github.event.workflow_run.id }}
 
       - name: Post PR comment using prebuilt action image
         uses: docker://ghcr.io/somegg90-blip/vyala-action:latest
