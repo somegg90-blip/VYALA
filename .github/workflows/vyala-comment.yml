@@ -9,6 +9,7 @@ on:
 permissions:
   pull-requests: write
   actions: read
+  packages: read
 
 jobs:
   comment:
@@ -22,7 +23,6 @@ jobs:
           path: /tmp
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
-
       - name: Post PR comment using prebuilt action image
         uses: docker://ghcr.io/somegg90-blip/vyala-action:latest
         with:
