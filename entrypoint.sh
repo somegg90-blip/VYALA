@@ -1,7 +1,7 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# ---------- Comment‑from‑file mode (used by the follow‑up workflow) ----------
+# ---------- Comment‑from‑file mode ----------
 if [ -n "${CBOM_FILE:-}" ]; then
   exec /usr/local/bin/vyala \
     -comment-from-file "${CBOM_FILE}" \
@@ -11,7 +11,7 @@ if [ -n "${CBOM_FILE:-}" ]; then
     -severity-threshold "${INPUT_SEVERITY_THRESHOLD:-medium}"
 fi
 
-# ---------- Normal scan mode (used by the main PR workflow) ----------
+# ---------- Normal scan mode ----------
 git config --global --add safe.directory "${GITHUB_WORKSPACE:-/github/workspace}" || true
 
 if [ -z "${GITHUB_EVENT_PATH:-}" ] || [ ! -f "${GITHUB_EVENT_PATH:-}" ]; then
@@ -30,7 +30,7 @@ ARGS=(
   -path "${GITHUB_WORKSPACE}"
   -diff-base "${BASE_SHA}"
   -severity-threshold "${INPUT_SEVERITY_THRESHOLD:-medium}"
-  -json /github/workspace/vyala-cbom.json
+  -json vyala-cbom.json
 )
 
 if [ "${POST_PR_COMMENT:-true}" = "true" ]; then
