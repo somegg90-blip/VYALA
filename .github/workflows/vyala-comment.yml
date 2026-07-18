@@ -20,6 +20,8 @@ jobs:
         with:
           name: vyala-cbom-${{ github.event.workflow_run.pull_requests[0].number }}
           path: /tmp
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
 
       - name: Post PR comment using prebuilt action image
         uses: docker://ghcr.io/somegg90-blip/vyala-action:latest
