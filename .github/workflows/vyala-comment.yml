@@ -34,3 +34,4 @@ jobs:
           CBOM_FILE: /github/workspace/vyala-cbom.json
           PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
           HEAD_SHA: ${{ github.event.workflow_run.pull_requests[0].head.sha }}
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
