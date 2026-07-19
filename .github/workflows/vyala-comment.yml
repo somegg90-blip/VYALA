@@ -19,10 +19,16 @@ jobs:
       - name: Download CBOM artifact
         uses: actions/download-artifact@v4
         with:
-          name: vyala-cbom-${{ github.event.workflow_run.pull_requests[0].number }}
+          name: vyala-cbom-${{ github.event.workflow_run.id }}
           path: ${{ github.workspace }}
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read PR metadata
+        id: prmeta
+        run: |
+          echo "pr_number=$(cat ${{ github.workspace }}/pr_number.txt)" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$(cat ${{ github.workspace }}/head_sha.txt)" >> "$GITHUB_OUTPUT"
 
       - name: Post PR comment using prebuilt action image
         uses: docker://ghcr.io/somegg90-blip/vyala-action:latest
@@ -32,6 +38,6 @@ jobs:
           post-comment: true
         env:
           CBOM_FILE: /github/workspace/vyala-cbom.json
-          PR_NUMBER: ${{ github.event.workflow_run.pull_requests[0].number }}
-          HEAD_SHA: ${{ github.event.workflow_run.pull_requests[0].head.sha }}
+          PR_NUMBER: ${{ steps.prmeta.outputs.pr_number }}
+          HEAD_SHA: ${{ steps.prmeta.outputs.head_sha }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
