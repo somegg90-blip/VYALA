@@ -19,15 +19,15 @@ jobs:
 
       - name: Write PR metadata
         run: |
-          echo "${{ github.event.pull_request.number }}" > /tmp/pr_number.txt
-          echo "${{ github.event.pull_request.head.sha }}" > /tmp/head_sha.txt
+          echo "${{ github.event.pull_request.number }}" > "${{ github.workspace }}/pr_number.txt"
+          echo "${{ github.event.pull_request.head.sha }}" > "${{ github.workspace }}/head_sha.txt"
 
       - name: Upload CBOM artifact
         uses: actions/upload-artifact@v4
         with:
           name: vyala-cbom-${{ github.run_id }}
           path: |
-            /tmp/vyala-cbom.json
-            /tmp/pr_number.txt
-            /tmp/head_sha.txt
+            ${{ github.workspace }}/vyala-cbom.json
+            ${{ github.workspace }}/pr_number.txt
+            ${{ github.workspace }}/head_sha.txt
           retention-days: 1
