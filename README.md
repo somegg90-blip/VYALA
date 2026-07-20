@@ -96,8 +96,8 @@ Enterprise PQC discovery tools take large organizations 12â€“24 months and $50Kâ
 
 - [x] Core scanner engine (Python, JS/TS)
 - [x] Diff-aware scanning + stable finding IDs
-- [ ] GitHub Action + PR comment posting
-- [ ] Dependency & IaC/TLS config scanning
+- [x] GitHub Action + PR comment posting
+- [x] Dependency & IaC/TLS config scanning
 - [ ] Dashboard + continuous monitoring
 - [ ] AI-assisted fix suggestions, grounded in FIPS 203/204/205
 
