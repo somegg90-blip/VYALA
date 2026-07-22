@@ -80,10 +80,6 @@ func Scan(repoRoot string, targets []string) (findings.CBOM, error) {
 		"--config", ruleDir,
 		"--json",
 		"--no-git-ignore",
-		// Hardcode critical excludes so the scanner never flags itself, its own
-		// tests, or noisy build artifacts (minified/bundled JS produces low-value,
-		// often-unreadable matches).
-		"--exclude", "testdata",
 		"--exclude", "internal/rules",
 		"--exclude", "node_modules",
 		"--exclude", "vendor",
