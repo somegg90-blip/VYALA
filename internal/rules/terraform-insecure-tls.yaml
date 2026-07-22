@@ -1,0 +1,18 @@
+rules:
+  - id: terraform-aws-insecure-tls
+    languages: [hcl]
+    severity: WARNING
+    message: "AWS S3 Bucket is using an outdated TLS policy. Use aws:tls-s1-2 or higher with PQC-ready configurations."
+    metadata:
+      algorithm: TLS
+      category: iac_misconfiguration
+      suggested_replacement: "Use TLS 1.3 with hybrid PQC key exchange (ML-KEM/ML-DSA) where supported by the cloud provider."
+    patterns:
+      - pattern: |
+          resource "aws_s3_bucket" $NAME {
+            ...
+            policy = $POLICY
+            ...
+          }
+      # This is a simplified pattern looking for the string 'tls1.0' or 'tls1.1' in the policy JSON
+      - pattern-regex: "tls1.[01]"

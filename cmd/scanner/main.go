@@ -7,6 +7,7 @@ import (
 	"os"
 	"path/filepath"
 	"strings"
+	"time"
 
 	"vyala/internal/diffscan"
 	"vyala/internal/engine"
@@ -16,6 +17,13 @@ import (
 
 var relevantExtensions = map[string]bool{
 	".py": true, ".js": true, ".jsx": true, ".ts": true, ".tsx": true,
+}
+
+// RelevantFilenames ensures we only scan specific manifests, not every random .json file
+var relevantFilenames = map[string]bool{
+	"package.json":     true,
+	"requirements.txt": true,
+	"pyproject.toml":   true,
 }
 
 func main() {
@@ -28,9 +36,10 @@ func main() {
 	postPRComment := flag.Bool("post-pr-comment", false, "post/update a PR comment with results")
 	commentFromFile := flag.String("comment-from-file", "", "post PR comment using the CBOM JSON at this path (no scan)")
 
-	// New flags for comment-only mode – override GitHub event parsing
 	prNumber := flag.Int("pr-number", 0, "PR number (for comment posting, overrides GITHUB_EVENT_PATH)")
 	headSHA := flag.String("head-sha", "", "Head commit SHA (for comment posting, overrides GITHUB_EVENT_PATH)")
+
+	probeEndpoints := flag.String("probe-endpoints", "", "comma-separated list of host:port endpoints to probe for TLS PQC readiness (e.g., 'api.example.com:443')")
 
 	flag.Parse()
 
@@ -53,10 +62,27 @@ func main() {
 	if *diffBase != "" {
 		cbom, err = diffScan(repoRoot, *diffBase)
 	} else {
-		cbom, err = engine.Scan(repoRoot, nil)
+		cbom, err = fullScan(repoRoot)
 	}
 	if err != nil {
 		fatal("scan failed: %v", err)
+	}
+
+	// ---------- Live TLS Endpoint Probing ----------
+	if *probeEndpoints != "" {
+		endpoints := strings.Split(*probeEndpoints, ",")
+		for i, e := range endpoints {
+			endpoints[i] = strings.TrimSpace(e)
+		}
+		// Note: ScanTLSProbes never actually returns a non-nil error — per-endpoint
+		// failures are logged and skipped internally, so this check is a safety net
+		// rather than a path that will currently trigger. Kept intentionally in case
+		// that internal behavior changes later.
+		tlsFindings, err := engine.ScanTLSProbes(endpoints)
+		if err != nil {
+			fatal("tls probe failed: %v", err)
+		}
+		cbom.Findings = append(cbom.Findings, tlsFindings...)
 	}
 
 	findings.WriteTerminalReport(os.Stdout, cbom)
@@ -97,20 +123,14 @@ func postCommentFromFile(path, severityThreshold string, prNumber int, headSHA s
 	return postComment(cbom, severityThreshold, prNumber, headSHA)
 }
 
-// postComment obtains the PR event and config, then posts/updates the comment.
-// If prNumber > 0 and headSHA is non-empty, those values are used directly
-// instead of reading $GITHUB_EVENT_PATH. This is essential for the
-// fork‑safe comment workflow, which runs on `workflow_run` and doesn't have
-// a natural pull_request event payload.
 func postComment(cbom findings.CBOM, severityThreshold string, prNumber int, headSHA string) error {
 	var ev *ghcomment.PREvent
 	var err error
 
 	if prNumber > 0 && headSHA != "" {
-		// Construct a minimal PREvent from the flags – no JSON parsing needed.
 		ev = &ghcomment.PREvent{
 			PullRequest: struct {
-				Number int    `json:"number"`
+				Number int `json:"number"`
 				Base   struct {
 					Ref string `json:"ref"`
 					SHA string `json:"sha"`
@@ -120,14 +140,12 @@ func postComment(cbom findings.CBOM, severityThreshold string, prNumber int, hea
 				} `json:"head"`
 			}{
 				Number: prNumber,
-				// Base info isn't needed for comment posting, so we leave it zero.
 				Head: struct {
 					SHA string `json:"sha"`
 				}{SHA: headSHA},
 			},
 		}
 	} else {
-		// Fall back to the standard environment-based event parsing.
 		ev, err = ghcomment.LoadEventFromEnv()
 		if err != nil {
 			return err
@@ -142,33 +160,71 @@ func postComment(cbom findings.CBOM, severityThreshold string, prNumber int, hea
 	return ghcomment.PostOrUpdate(cfg, ev.PullRequest.Number, body)
 }
 
-// diffScan returns the CBOM for only the changed files between baseRef and HEAD.
+func fullScan(repoRoot string) (findings.CBOM, error) {
+	cbom, err := engine.Scan(repoRoot, nil)
+	if err != nil {
+		return findings.CBOM{}, fmt.Errorf("code scan failed: %w", err)
+	}
+
+	depFindings, err := engine.ScanManifests(repoRoot, nil)
+	if err != nil {
+		return findings.CBOM{}, fmt.Errorf("dependency scan failed: %w", err)
+	}
+
+	cbom.Findings = append(cbom.Findings, depFindings...)
+	return cbom, nil
+}
+
 func diffScan(repoRoot, baseRef string) (findings.CBOM, error) {
 	changed, err := diffscan.ChangedFiles(repoRoot, baseRef)
 	if err != nil {
 		return findings.CBOM{}, fmt.Errorf("computing changed files: %w", err)
 	}
 
-	var targets []string
-	var relFiles []string
+	var codeTargets []string
+	var manifestTargets []string
+	var relCodeFiles []string
+
 	for _, f := range changed {
-		if relevantExtensions[strings.ToLower(filepath.Ext(f))] {
-			targets = append(targets, filepath.Join(repoRoot, f))
-			relFiles = append(relFiles, f)
+		ext := strings.ToLower(filepath.Ext(f))
+		base := filepath.Base(f)
+
+		if relevantExtensions[ext] {
+			codeTargets = append(codeTargets, filepath.Join(repoRoot, f))
+			relCodeFiles = append(relCodeFiles, f)
+		} else if relevantFilenames[base] {
+			manifestTargets = append(manifestTargets, filepath.Join(repoRoot, f))
 		}
 	}
 
-	if len(targets) == 0 {
-		return findings.CBOM{Version: findings.SchemaVersion, Findings: []findings.Finding{}}, nil
+	if len(codeTargets) == 0 && len(manifestTargets) == 0 {
+		return findings.CBOM{Version: findings.SchemaVersion, Generated: time.Now().UTC(), Findings: []findings.Finding{}}, nil
 	}
 
-	cbom, err := engine.Scan(repoRoot, targets)
-	if err != nil {
-		return findings.CBOM{}, err
+	cbom := findings.CBOM{
+		Version:   findings.SchemaVersion,
+		Generated: time.Now().UTC(),
+		Findings:  []findings.Finding{},
+	}
+
+	if len(codeTargets) > 0 {
+		codeCBOM, err := engine.Scan(repoRoot, codeTargets)
+		if err != nil {
+			return findings.CBOM{}, err
+		}
+		cbom.Findings = append(cbom.Findings, codeCBOM.Findings...)
+	}
+
+	if len(manifestTargets) > 0 {
+		depFindings, err := engine.ScanManifests(repoRoot, manifestTargets)
+		if err != nil {
+			return findings.CBOM{}, err
+		}
+		cbom.Findings = append(cbom.Findings, depFindings...)
 	}
 
 	addedByFile := map[string]map[int]bool{}
-	for _, f := range relFiles {
+	for _, f := range relCodeFiles {
 		lines, err := diffscan.AddedLines(repoRoot, baseRef, f)
 		if err != nil {
 			return findings.CBOM{}, fmt.Errorf("computing added lines for %s: %w", f, err)
@@ -176,12 +232,17 @@ func diffScan(repoRoot, baseRef string) (findings.CBOM, error) {
 		addedByFile[f] = lines
 	}
 
-	filtered := cbom.Findings[:0]
+	var filtered []findings.Finding
 	for _, finding := range cbom.Findings {
+		if finding.Type == "dependency" {
+			filtered = append(filtered, finding)
+			continue
+		}
 		if addedByFile[finding.File][finding.Line] {
 			filtered = append(filtered, finding)
 		}
 	}
+
 	cbom.Findings = filtered
 	return cbom, nil
 }

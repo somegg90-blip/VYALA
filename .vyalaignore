@@ -1,0 +1,5 @@
+# Ignore test fixtures and the rules themselves from being scanned
+testdata/
+internal/rules/
+node_modules/
+vendor/

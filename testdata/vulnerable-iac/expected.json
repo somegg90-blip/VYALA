@@ -1,0 +1,30 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-07-20T17:27:00.517158397Z",
+  "findings": [
+    {
+      "finding_id": "vy-04d30f2f5210d81a",
+      "type": "",
+      "file": "ingress.yaml",
+      "line": 10,
+      "algorithm": "TLS",
+      "severity": "medium",
+      "category": "iac_misconfiguration",
+      "hnd_exposure_estimate": "Internal / not matched to an external-facing path convention",
+      "suggested_replacement": "Remove hardcoded classical ciphers (ECDHE-RSA) and use hybrid PQC suites if supported by the ingress controller.",
+      "rule_id": "k8s-insecure-cipher-suites"
+    },
+    {
+      "finding_id": "vy-5ff0cb1e39b00bc1",
+      "type": "",
+      "file": "main.tf",
+      "line": 13,
+      "algorithm": "TLS",
+      "severity": "medium",
+      "category": "iac_misconfiguration",
+      "hnd_exposure_estimate": "Internal / not matched to an external-facing path convention",
+      "suggested_replacement": "Use TLS 1.3 with hybrid PQC key exchange (ML-KEM/ML-DSA) where supported by the cloud provider.",
+      "rule_id": "terraform-aws-insecure-tls"
+    }
+  ]
+}

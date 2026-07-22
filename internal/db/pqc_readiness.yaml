@@ -1,0 +1,19 @@
+# Format: package_name: status / replacement
+npm:
+  "node-forge":
+    status: vulnerable
+    algorithm: RSA/ECDSA
+    replacement: "Migrate to native crypto or @noble/curves (PQC ready)"
+  "jsencrypt":
+    status: vulnerable
+    algorithm: RSA
+    replacement: "Use WebCrypto API with PQC algorithms"
+pip:
+  "pycryptodome":
+    status: vulnerable
+    algorithm: RSA/ECC
+    replacement: "Use cryptography>=41.0 with OpenSSL 3.x PQC providers"
+  "ecdsa":
+    status: vulnerable
+    algorithm: ECDSA
+    replacement: "Use cryptography>=41.0 with OpenSSL 3.x PQC providers"

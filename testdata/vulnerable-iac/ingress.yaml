@@ -1,0 +1,12 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: my-ingress
+spec:
+  tls:
+    - hosts:
+        - api.example.com
+      secretName: my-tls-secret
+      cipherSuites:
+        - ECDHE-RSA-AES128-GCM-SHA256
+        - ECDHE-RSA-AES256-GCM-SHA384

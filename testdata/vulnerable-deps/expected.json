@@ -1,0 +1,54 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-07-20T17:56:08.640133606Z",
+  "findings": [
+    {
+      "finding_id": "vy-10e7cce4f643948f",
+      "type": "dependency",
+      "file": "package.json",
+      "line": 1,
+      "algorithm": "RSA/ECDSA",
+      "severity": "high",
+      "category": "vulnerable_dependency",
+      "hnd_exposure_estimate": "Library-level usage",
+      "suggested_replacement": "Migrate to native crypto or @noble/curves (PQC ready)",
+      "rule_id": "dep-npm-node-forge"
+    },
+    {
+      "finding_id": "vy-acb4b745898ac6ef",
+      "type": "dependency",
+      "file": "package.json",
+      "line": 1,
+      "algorithm": "RSA",
+      "severity": "high",
+      "category": "vulnerable_dependency",
+      "hnd_exposure_estimate": "Library-level usage",
+      "suggested_replacement": "Use WebCrypto API with PQC algorithms",
+      "rule_id": "dep-npm-jsencrypt"
+    },
+    {
+      "finding_id": "vy-37b81a9d3a8305a4",
+      "type": "dependency",
+      "file": "requirements.txt",
+      "line": 2,
+      "algorithm": "RSA/ECC",
+      "severity": "high",
+      "category": "vulnerable_dependency",
+      "hnd_exposure_estimate": "Library-level usage",
+      "suggested_replacement": "Use cryptography\u003e=41.0 with OpenSSL 3.x PQC providers",
+      "rule_id": "dep-pip-pycryptodome"
+    },
+    {
+      "finding_id": "vy-6b9618564f5d8533",
+      "type": "dependency",
+      "file": "requirements.txt",
+      "line": 3,
+      "algorithm": "ECDSA",
+      "severity": "high",
+      "category": "vulnerable_dependency",
+      "hnd_exposure_estimate": "Library-level usage",
+      "suggested_replacement": "Use cryptography\u003e=41.0 with OpenSSL 3.x PQC providers",
+      "rule_id": "dep-pip-ecdsa"
+    }
+  ]
+}

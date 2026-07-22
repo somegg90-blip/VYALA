@@ -1,10 +1,14 @@
 package engine
 
 import (
+	"bufio"
 	"bytes"
+	"context"
 	"encoding/json"
 	"fmt"
+	"os"
 	"os/exec"
+	"path/filepath"
 	"strings"
 	"time"
 
@@ -14,9 +18,9 @@ import (
 )
 
 type semgrepMetadata struct {
-	Algorithm             string `json:"algorithm"`
-	Category              string `json:"category"`
-	SuggestedReplacement  string `json:"suggested_replacement"`
+	Algorithm            string `json:"algorithm"`
+	Category             string `json:"category"`
+	SuggestedReplacement string `json:"suggested_replacement"`
 }
 
 type semgrepExtra struct {
@@ -42,25 +46,76 @@ type semgrepOutput struct {
 	} `json:"errors"`
 }
 
+// readIgnorePatterns reads a .vyalaignore file from the repoRoot and returns a slice of patterns.
+func readIgnorePatterns(repoRoot string) []string {
+	ignoreFile := filepath.Join(repoRoot, ".vyalaignore")
+	file, err := os.Open(ignoreFile)
+	if err != nil {
+		return nil
+	}
+	defer file.Close()
+
+	var patterns []string
+	scanner := bufio.NewScanner(file)
+	for scanner.Scan() {
+		line := strings.TrimSpace(scanner.Text())
+		if line != "" && !strings.HasPrefix(line, "#") {
+			patterns = append(patterns, line)
+		}
+	}
+	return patterns
+}
+
+// scanTimeout bounds how long a single semgrep invocation may run, so a
+// pathologically large repo (or a runaway pattern match) can't hang CI indefinitely.
+const scanTimeout = 5 * time.Minute
+
 func Scan(repoRoot string, targets []string) (findings.CBOM, error) {
 	ruleDir, err := rules.ExtractToTemp()
 	if err != nil {
 		return findings.CBOM{}, fmt.Errorf("extracting rules: %w", err)
 	}
 
-	args := []string{"--config", ruleDir, "--json", "--no-git-ignore"}
+	args := []string{
+		"--config", ruleDir,
+		"--json",
+		"--no-git-ignore",
+		// Hardcode critical excludes so the scanner never flags itself, its own
+		// tests, or noisy build artifacts (minified/bundled JS produces low-value,
+		// often-unreadable matches).
+		"--exclude", "testdata",
+		"--exclude", "internal/rules",
+		"--exclude", "node_modules",
+		"--exclude", "vendor",
+		"--exclude", "dist",
+		"--exclude", "build",
+		"--exclude", ".git",
+	}
+
+	ignorePatterns := readIgnorePatterns(repoRoot)
+	for _, pattern := range ignorePatterns {
+		args = append(args, "--exclude", pattern)
+	}
+
 	if len(targets) > 0 {
 		args = append(args, targets...)
 	} else {
 		args = append(args, repoRoot)
 	}
 
-	cmd := exec.Command("semgrep", args...)
+	ctx, cancel := context.WithTimeout(context.Background(), scanTimeout)
+	defer cancel()
+
+	cmd := exec.CommandContext(ctx, "semgrep", args...)
 	var stdout, stderr bytes.Buffer
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 
 	runErr := cmd.Run()
+
+	if ctx.Err() == context.DeadlineExceeded {
+		return findings.CBOM{}, fmt.Errorf("semgrep scan timed out after %s (repo may be too large, or hit a pathological pattern match)", scanTimeout)
+	}
 	if runErr != nil {
 		if _, ok := runErr.(*exec.ExitError); !ok {
 			return findings.CBOM{}, fmt.Errorf("running semgrep: %w (stderr: %s)", runErr, stderr.String())

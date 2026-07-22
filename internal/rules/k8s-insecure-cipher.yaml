@@ -1,0 +1,12 @@
+rules:
+  - id: k8s-insecure-cipher-suites
+    languages: [yaml]
+    severity: ERROR
+    message: "Kubernetes Ingress or Gateway is configured with insecure/classical TLS cipher suites."
+    metadata:
+      algorithm: TLS
+      category: iac_misconfiguration
+      suggested_replacement: "Remove hardcoded classical ciphers (ECDHE-RSA) and use hybrid PQC suites if supported by the ingress controller."
+    # Simpler pattern: just look for the list item string under cipherSuites key
+    patterns:
+      - pattern-regex: "(?s)cipherSuites:.*?(RSA|ECDHE)"
