@@ -4,12 +4,10 @@ rules:
     severity: WARNING
     message: "RSA signing/verification detected – quantum-vulnerable"
     pattern-either:
-      - pattern: $RSA.SignData($DATA, $HASH, RSASignaturePadding.Pkcs1)
-      - pattern: $RSA.SignData($DATA, $HASH)
-      - pattern: $RSA.VerifyData($DATA, $SIG, $HASH, RSASignaturePadding.Pkcs1)
-      - pattern: $RSA.VerifyData($DATA, $SIG, $HASH)
       - pattern: ((RSACryptoServiceProvider) $RSA).SignData($DATA, $HASH)
       - pattern: ((RSACryptoServiceProvider) $RSA).VerifyData($DATA, $HASH, $SIG)
+      - pattern: $RSA.SignData($DATA, $HASH, RSASignaturePadding.Pkcs1)
+      - pattern: $RSA.VerifyData($DATA, $SIG, $HASH, RSASignaturePadding.Pkcs1)
     metadata:
       category: rsa_signing_usage
       algorithm: RSA

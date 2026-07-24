@@ -4,11 +4,20 @@ rules:
     severity: WARNING
     message: "Classical ECC usage (ECDSA/ECDH) detected – not quantum-resistant unless hybrid"
     pattern-either:
+      # Key creation (already proven)
       - pattern: ECDsa.Create(...)
-      - pattern: ECDiffieHellman.Create(...)
       - pattern: new ECDsaCng(...)
-      - pattern: new ECDiffieHellmanCng(...)
       - pattern: System.Security.Cryptography.ECDsa.Create(...)
+      - pattern: ECDiffieHellman.Create(...)
+      - pattern: new ECDiffieHellmanCng(...)
+      - pattern: System.Security.Cryptography.ECDiffieHellman.Create(...)
+      # Unambiguous ECDSA signing/verification – typed receiver ensures it's ECDsa, not RSA
+      - pattern: (ECDsa $ECD).SignData($DATA, $HASH)
+      - pattern: (ECDsa $ECD).VerifyData($DATA, $SIG, $HASH)
+      - pattern: (ECDsaCng $ECD).SignData($DATA, $HASH)
+      - pattern: (ECDsaCng $ECD).VerifyData($DATA, $SIG, $HASH)
+      # Unambiguous ECDH key agreement
+      - pattern: (ECDiffieHellman $ECDH).DeriveKeyMaterial($OTHER)
     metadata:
       category: classical_ecc
       algorithm: ECDSA/ECDH
