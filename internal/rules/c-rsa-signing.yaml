@@ -1,0 +1,24 @@
+rules:
+  - id: pqc-rsa-signing-c
+    languages: [c, cpp]
+    severity: WARNING
+    message: "RSA signing/verification detected – quantum-vulnerable"
+    pattern-either:
+      - pattern: RSA_sign(...)
+      - pattern: RSA_verify(...)
+      - pattern: RSA_sign_ASN1_OCTET_STRING(...)
+      - pattern: RSA_verify_ASN1_OCTET_STRING(...)
+      - pattern: EVP_DigestSignInit(...)
+      - pattern: EVP_DigestSign(...)
+      - pattern: EVP_DigestSignFinal(...)
+      - pattern: EVP_DigestVerifyInit(...)
+      - pattern: EVP_DigestVerify(...)
+      - pattern: EVP_DigestVerifyFinal(...)
+      - pattern: EVP_PKEY_sign_init(...)
+      - pattern: EVP_PKEY_sign(...)
+      - pattern: EVP_PKEY_verify_init(...)
+      - pattern: EVP_PKEY_verify(...)
+    metadata:
+      category: rsa_signing_usage
+      algorithm: RSA
+      suggested_replacement: "Migrate to ML-DSA (FIPS 204). For hybrid, consider composite RSA+ML-DSA signatures."

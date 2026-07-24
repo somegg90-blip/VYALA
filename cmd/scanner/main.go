@@ -17,7 +17,8 @@ import (
 
 var relevantExtensions = map[string]bool{
 	".py": true, ".js": true, ".jsx": true, ".ts": true, ".tsx": true,
-	".java": true, ".go": true, ".cs": true, ".rs": true,
+	".java": true, ".go": true, ".cs": true, ".rs": true, ".c": true,
+	".cpp": true, ".h": true, ".hpp": true, ".cc": true, ".cxx": true,
 }
 
 // RelevantFilenames ensures we only scan specific manifests, not every random .json file

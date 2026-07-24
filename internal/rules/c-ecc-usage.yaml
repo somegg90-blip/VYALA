@@ -1,0 +1,20 @@
+rules:
+  - id: pqc-ecc-classical-c
+    languages: [c, cpp]
+    severity: WARNING
+    message: "Classical ECC (ECDSA/ECDH) detected – not quantum-resistant unless hybrid"
+    pattern-either:
+      - pattern: EC_KEY_new_by_curve_name(...)
+      - pattern: EC_KEY_generate_key(...)
+      - pattern: EVP_PKEY_CTX_set_ec_keygen_curve_nid(...)
+      - pattern: EVP_PKEY_CTX_new_id($CTX, EVP_PKEY_EC, ...)
+      - pattern: EVP_EC_gen(...)
+      - pattern: ECDSA_do_sign(...)
+      - pattern: ECDSA_do_sign_ex(...)
+      - pattern: ECDSA_sign(...)
+      - pattern: ECDSA_verify(...)
+      - pattern: ECDH_compute_key(...)
+    metadata:
+      category: classical_ecc
+      algorithm: ECDSA/ECDH
+      suggested_replacement: "Use ML-DSA (FIPS 204) or SLH-DSA (FIPS 205) for signing, or a hybrid ECDH+Kyber for key exchange. See liboqs or OpenSSL 3 oqs-provider."

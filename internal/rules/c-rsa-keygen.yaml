@@ -1,0 +1,15 @@
+rules:
+  - id: pqc-rsa-keygen-c
+    languages: [c, cpp]
+    severity: WARNING
+    message: "RSA key generation detected – not quantum-resistant"
+    pattern-either:
+      - pattern: RSA_generate_key_ex(...)
+      - pattern: RSA_generate_key(...)
+      - pattern: EVP_PKEY_CTX_set_rsa_keygen_bits(...)
+      - pattern: EVP_PKEY_CTX_new_id($CTX, EVP_PKEY_RSA, ...)
+      - pattern: EVP_RSA_gen(...)
+    metadata:
+      category: rsa_keygen
+      algorithm: RSA
+      suggested_replacement: "Replace with ML-KEM (FIPS 203) or a hybrid approach. For C/C++, use liboqs or OpenSSL 3's oqs-provider."
