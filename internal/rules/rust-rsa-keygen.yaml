@@ -1,0 +1,13 @@
+rules:
+  - id: pqc-rsa-keygen-rust
+    languages: [rust]
+    severity: WARNING
+    message: "RSA key generation detected – not quantum-resistant"
+    pattern-either:
+      - pattern: RsaPrivateKey::new($RNG, $BITS)
+      - pattern: rsa::RsaPrivateKey::new($RNG, $BITS)
+      - pattern: rsa::pkcs1::EncodeRsaPrivateKey
+    metadata:
+      category: rsa_keygen
+      algorithm: RSA
+      suggested_replacement: "Replace with a post-quantum KEM like ML-KEM (FIPS 203) or use a hybrid approach. For Rust, consider the `ml-kem` crate or `oqs` bindings."

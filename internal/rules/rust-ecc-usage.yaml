@@ -1,0 +1,15 @@
+rules:
+  - id: pqc-ecc-classical-rust
+    languages: [rust]
+    severity: WARNING
+    message: "Classical ECC usage (ECDSA/ECDH) detected – not quantum-resistant unless hybrid"
+    pattern-either:
+      - pattern: ecdsa::SigningKey::<$CURVE>::new($RNG)
+      - pattern: ecdsa::Signature::<$CURVE>
+      - pattern: p256::SecretKey::new($RNG)
+      - pattern: p256::ecdsa::SigningKey::new($RNG)
+      - pattern: ring::signature::EcdsaKeyPair
+    metadata:
+      category: classical_ecc
+      algorithm: ECDSA/ECDH
+      suggested_replacement: "Use ML-DSA (FIPS 204) or SLH-DSA (FIPS 205) for signing, or a hybrid ECDH+Kyber for key exchange. In Rust, consider `ml-dsa` or `oqs` crates."

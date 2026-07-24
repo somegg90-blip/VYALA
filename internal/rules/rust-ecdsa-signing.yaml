@@ -1,0 +1,23 @@
+rules:
+  - id: pqc-ecdsa-signing-rust
+    languages: [rust]
+    severity: WARNING
+    message: "ECDSA signing/verification detected – not quantum-resistant unless hybrid"
+    pattern-either:
+      # ecdsa crate specific
+      - pattern: ecdsa::SigningKey::<$CURVE>::sign($MSG)
+      - pattern: ecdsa::VerifyingKey::<$CURVE>::verify($MSG, $SIG)
+      - pattern: SigningKey::<$CURVE>::new($RNG)
+      - pattern: VerifyingKey::<$CURVE>::from_sec1_bytes($BYTES)
+      # ring ECDSA
+      - pattern: ring::signature::EcdsaKeyPair
+      - pattern: ring::signature::ECDSA_P256_SHA256_FIXED
+      - pattern: ring::signature::ECDSA_P384_SHA384_FIXED
+      - pattern: ring::signature::ECDSA_P256_SHA256_FIXED_ASN1
+      - pattern: ring::signature::ECDSA_P384_SHA384_FIXED_ASN1
+      - pattern: ring::signature::UnparsedPublicKey::new(ring::signature::ECDSA_P256_SHA256_FIXED, $BYTES)
+      - pattern: ring::signature::UnparsedPublicKey::new(ring::signature::ECDSA_P384_SHA384_FIXED, $BYTES)
+    metadata:
+      category: ecdsa_signing_usage
+      algorithm: ECDSA
+      suggested_replacement: "Use ML-DSA (FIPS 204) or SLH-DSA (FIPS 205) for signing. In Rust, consider `ml-dsa` crate."

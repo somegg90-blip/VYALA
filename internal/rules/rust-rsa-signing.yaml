@@ -1,0 +1,18 @@
+rules:
+  - id: pqc-rsa-signing-rust
+    languages: [rust]
+    severity: WARNING
+    message: "RSA signing/verification detected – quantum-vulnerable"
+    pattern-either:
+      - pattern: $KEY.sign($RNG, $SCHEME, $DIGEST)
+      - pattern: $KEY.verify($SCHEME, $DIGEST, $SIG)
+      # ring RSA signing
+      - pattern: ring::signature::RsaKeyPair
+      - pattern: ring::signature::RSA_PKCS1_SHA256
+      - pattern: ring::signature::RSA_PKCS1_SHA384
+      - pattern: ring::signature::RSA_PKCS1_SHA512
+      - pattern: ring::signature::RSA_PSS_SHA256
+    metadata:
+      category: rsa_signing_usage
+      algorithm: RSA
+      suggested_replacement: "Migrate to ML-DSA (FIPS 204) for signing. For hybrid, consider combining RSA with ML-DSA via a composite signature."
