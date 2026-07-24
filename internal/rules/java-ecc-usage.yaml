@@ -1,0 +1,17 @@
+rules:
+  - id: pqc-ecc-classical-java
+    languages: [java]
+    severity: WARNING
+    message: "Classical ECC usage (ECDSA/ECDH) detected – not quantum-resistant unless hybrid"
+    pattern-either:
+      - pattern: java.security.KeyPairGenerator.getInstance("EC")
+      - pattern: java.security.Signature.getInstance("SHA256withECDSA")
+      - pattern: java.security.Signature.getInstance("SHA384withECDSA")
+      - pattern: java.security.Signature.getInstance("SHA512withECDSA")
+      - pattern: javax.crypto.KeyAgreement.getInstance("ECDH")
+      # BouncyCastle
+      - pattern: org.bouncycastle.jce.spec.ECParameterSpec
+    metadata:
+      category: classical_ecc
+      algorithm: ECDSA/ECDH
+      suggested_replacement: "Use ML-DSA (FIPS 204) or SLH-DSA (FIPS 205) for signing, or a hybrid ECDH+Kyber key agreement. BouncyCastle provides PQC algorithms."

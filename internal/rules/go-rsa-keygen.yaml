@@ -1,0 +1,12 @@
+rules:
+  - id: pqc-rsa-keygen-go
+    languages: [go]
+    severity: WARNING
+    message: "RSA key generation detected – not quantum-resistant"
+    pattern-either:
+      - pattern: rsa.GenerateKey($RAND, $BITS)
+      - pattern: rsa.GenerateMultiPrimeKey($RAND, $NPRIMES, $BITS)
+    metadata:
+      category: rsa_keygen
+      algorithm: RSA
+      suggested_replacement: "Replace with ML-KEM (FIPS 203). For Go, consider the `cloudflare/circl` library or a hybrid approach."

@@ -1,0 +1,15 @@
+rules:
+  - id: pqc-rsa-keygen-java
+    languages: [java]
+    severity: WARNING
+    message: "RSA key generation detected – not quantum-resistant"
+    pattern-either:
+      - pattern: java.security.KeyPairGenerator.getInstance("RSA")
+      - pattern: java.security.KeyPairGenerator.getInstance("RSA", ...)
+      - pattern: $KG.initialize($SIZE)
+      # BouncyCastle
+      - pattern: org.bouncycastle.jce.provider.BouncyCastleProvider
+    metadata:
+      category: rsa_keygen
+      algorithm: RSA
+      suggested_replacement: "Replace with a post-quantum KEM like ML-KEM (FIPS 203) or use a hybrid approach. For Java, consider BouncyCastle's PQC support or the OpenQuantumSafe JNI bindings."

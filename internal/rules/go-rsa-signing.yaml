@@ -1,0 +1,14 @@
+rules:
+  - id: pqc-rsa-signing-go
+    languages: [go]
+    severity: WARNING
+    message: "RSA signing/verification detected – quantum-vulnerable"
+    pattern-either:
+      - pattern: rsa.SignPKCS1v15($RAND, $PRIV, $HASH, $DIGEST)
+      - pattern: rsa.VerifyPKCS1v15($PUB, $HASH, $DIGEST, $SIG)
+      - pattern: rsa.SignPSS($RAND, $PRIV, $HASH, $DIGEST, $OPTS)
+      - pattern: rsa.VerifyPSS($PUB, $HASH, $DIGEST, $SIG, $OPTS)
+    metadata:
+      category: rsa_signing_usage
+      algorithm: RSA
+      suggested_replacement: "Migrate to ML-DSA (FIPS 204) for signing. For hybrid, consider using a composite RSA+ML-DSA signature."

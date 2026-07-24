@@ -1,0 +1,16 @@
+rules:
+  - id: pqc-rsa-signing-csharp
+    languages: [csharp]
+    severity: WARNING
+    message: "RSA signing/verification detected – quantum-vulnerable"
+    pattern-either:
+      - pattern: $RSA.SignData($DATA, $HASH, RSASignaturePadding.Pkcs1)
+      - pattern: $RSA.SignData($DATA, $HASH)
+      - pattern: $RSA.VerifyData($DATA, $SIG, $HASH, RSASignaturePadding.Pkcs1)
+      - pattern: $RSA.VerifyData($DATA, $SIG, $HASH)
+      - pattern: ((RSACryptoServiceProvider) $RSA).SignData($DATA, $HASH)
+      - pattern: ((RSACryptoServiceProvider) $RSA).VerifyData($DATA, $HASH, $SIG)
+    metadata:
+      category: rsa_signing_usage
+      algorithm: RSA
+      suggested_replacement: "Migrate to ML-DSA (FIPS 204) for signing. For hybrid solutions, consider a composite RSA+ML-DSA signature."

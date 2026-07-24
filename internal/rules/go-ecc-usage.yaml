@@ -1,0 +1,16 @@
+rules:
+  - id: pqc-ecc-classical-go
+    languages: [go]
+    severity: WARNING
+    message: "Classical ECC usage (ECDSA/ECDH) detected – not quantum-resistant unless hybrid"
+    pattern-either:
+      - pattern: ecdsa.GenerateKey($CURVE, $RAND)
+      - pattern: ecdsa.Sign($RAND, $PRIV, $DIGEST)
+      - pattern: ecdsa.Verify($PUB, $DIGEST, $R, $S)
+      - pattern: ecdh.P256()
+      - pattern: ecdh.P384()
+      - pattern: ecdh.P521()
+    metadata:
+      category: classical_ecc
+      algorithm: ECDSA/ECDH
+      suggested_replacement: "Use ML-DSA or SLH-DSA for signing, or a hybrid ECDH+Kyber for key exchange. See `cloudflare/circl` for Kyber implementation."

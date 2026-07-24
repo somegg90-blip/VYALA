@@ -1,0 +1,15 @@
+rules:
+  - id: pqc-ecc-classical-csharp
+    languages: [csharp]
+    severity: WARNING
+    message: "Classical ECC usage (ECDSA/ECDH) detected – not quantum-resistant unless hybrid"
+    pattern-either:
+      - pattern: ECDsa.Create(...)
+      - pattern: ECDiffieHellman.Create(...)
+      - pattern: new ECDsaCng(...)
+      - pattern: new ECDiffieHellmanCng(...)
+      - pattern: System.Security.Cryptography.ECDsa.Create(...)
+    metadata:
+      category: classical_ecc
+      algorithm: ECDSA/ECDH
+      suggested_replacement: "Use ML-DSA (FIPS 204) for signing, or a hybrid ECDH+Kyber for key exchange. For .NET, explore BouncyCastle PQC or Microsoft's PQCrypto library."

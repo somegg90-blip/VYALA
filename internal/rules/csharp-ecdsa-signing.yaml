@@ -1,0 +1,12 @@
+rules:
+  - id: pqc-ecdsa-signing-csharp
+    languages: [csharp]
+    severity: WARNING
+    message: "ECDSA signing/verification detected – not quantum-resistant unless hybrid"
+    pattern-either:
+      - pattern: $ECD.SignData($DATA, $HASH)
+      - pattern: $ECD.VerifyData($DATA, $SIG, $HASH)
+    metadata:
+      category: ecdsa_signing_usage
+      algorithm: ECDSA
+      suggested_replacement: "Replace with ML-DSA (FIPS 204) or SLH-DSA (FIPS 205). For hybrid, use a composite ECDSA+ML-DSA signature."

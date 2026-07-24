@@ -1,0 +1,16 @@
+rules:
+  - id: pqc-rsa-signing-java
+    languages: [java]
+    severity: WARNING
+    message: "RSA signing/verification detected – quantum-vulnerable"
+    pattern-either:
+      - pattern: java.security.Signature.getInstance("SHA256withRSA")
+      - pattern: java.security.Signature.getInstance("SHA384withRSA")
+      - pattern: java.security.Signature.getInstance("SHA512withRSA")
+      - pattern: java.security.Signature.getInstance("MD5withRSA")
+      - pattern: java.security.Signature.getInstance("SHA1withRSA")
+      - pattern: $SIGN.initSign($PRIV)
+    metadata:
+      category: rsa_signing_usage
+      algorithm: RSA
+      suggested_replacement: "Migrate signing to ML-DSA (FIPS 204) or SLH-DSA (FIPS 205). For hybrid transitional solutions, consider using a hybrid RSA+ML-DSA signature."

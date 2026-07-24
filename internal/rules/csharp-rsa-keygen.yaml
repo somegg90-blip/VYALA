@@ -1,0 +1,14 @@
+rules:
+  - id: pqc-rsa-keygen-csharp
+    languages: [csharp]
+    severity: WARNING
+    message: "RSA key generation or usage detected – not quantum-resistant"
+    pattern-either:
+      - pattern: new RSACryptoServiceProvider(...)
+      - pattern: RSA.Create(...)
+      - pattern: new RSACng(...)
+      - pattern: System.Security.Cryptography.RSA.Create(...)
+    metadata:
+      category: rsa_keygen
+      algorithm: RSA
+      suggested_replacement: "Replace with a post-quantum algorithm like ML-KEM (FIPS 203). For .NET, consider using the BouncyCastle PQC library or a hybrid approach."
