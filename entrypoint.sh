@@ -1,6 +1,13 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# If args are provided (like "scan --path . --upload-url ..."), run them directly.
+# The Go binary handles all the logic.
+if [ -n "${INPUT_ARGS:-}" ]; then
+  echo "Running VYALA with args: ${INPUT_ARGS}"
+  exec /usr/local/bin/vyala ${INPUT_ARGS}
+fi
+
 # ---------- Comment‑from‑file mode ----------
 if [ -n "${CBOM_FILE:-}" ]; then
   exec /usr/local/bin/vyala \
