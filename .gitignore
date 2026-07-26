@@ -1,2 +1,54 @@
 vyala
 .env
+# ---------- Go ----------
+# Compiled binaries
+*.exe
+*.dll
+*.so
+*.dylib
+*.test
+*.out
+
+# ---------- Environment & Secrets ----------
+.env
+.env.local
+.env.production
+*.local
+
+# ---------- Frontend (web/) ----------
+web/node_modules/
+web/dist/
+web/.vite/
+
+# ---------- Dependency Directories ----------
+# (Just in case any get installed at the root by accident)
+node_modules/
+vendor/
+
+# ---------- OS Generated Files ----------
+# macOS
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+# Windows
+Thumbs.db
+ehthumbs.db
+Desktop.ini
+
+# ---------- IDE / Editor ----------
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# ---------- Local Database Dumps ----------
+# (We want to keep schema.sql, but ignore personal data dumps)
+data.sql
+dump.sql
+
+# ---------- Test Coverage ----------
+coverage.out
+coverage.html

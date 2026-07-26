@@ -1,0 +1,29 @@
+name: VYALA Nightly Scan
+
+on:
+  schedule:
+    # Runs at 00:00 UTC every day (adjust the cron if you want a different time)
+    - cron: '0 0 * * *'
+  # Allows you to trigger it manually from the GitHub Actions tab for testing
+  workflow_dispatch:
+
+jobs:
+  scheduled-scan:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0 # Ensure full repo is checked out for complete scanning
+
+      - name: Run VYALA Scanner and Upload
+        uses: docker://ghcr.io/somegg90-blip/vyala:latest # TODO: Replace with your actual GHCR image path
+        env:
+          # The VYALA uploader package reads these automatically to populate the CBOM metadata
+          GITHUB_REPOSITORY: ${{ github.repository }}
+          GITHUB_SHA: ${{ github.sha }}
+          GITHUB_REF: ${{ github.ref }}
+          GITHUB_EVENT_NAME: 'scheduled'
+        with:
+          # We do a full scan (no --diff-base) and upload the results to the backend API
+          args: scan --path . --upload-url ${{ secrets.VYALA_BACKEND_URL }} --api-key ${{ secrets.VYALA_API_KEY }}

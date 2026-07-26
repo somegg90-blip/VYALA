@@ -232,3 +232,67 @@ func (s *Store) GetTrends(ctx context.Context, repoID uuid.UUID, days int) ([]Tr
 	}
 	return trends, nil
 }
+
+func (s *Store) GetScans(ctx context.Context, repoID uuid.UUID, limit int) ([]Scan, error) {
+    rows, err := s.db.Query(ctx, `
+        SELECT id, repo_id, commit_sha, branch, trigger_type, created_at
+        FROM scans 
+        WHERE repo_id = $1 
+        ORDER BY created_at DESC 
+        LIMIT $2
+    `, repoID, limit)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var scans []Scan
+    for rows.Next() {
+        var sc Scan
+        if err := rows.Scan(&sc.ID, &sc.RepoID, &sc.CommitSHA, &sc.Branch, &sc.TriggerType, &sc.CreatedAt); err != nil {
+            return nil, err
+        }
+        scans = append(scans, sc)
+    }
+    return scans, nil
+}
+
+type Finding struct {
+    ID                   uuid.UUID `json:"id"`
+    RepoID               uuid.UUID `json:"repo_id"`
+    FindingID            string    `json:"finding_id"`
+    Type                 string    `json:"type"`
+    File                 string    `json:"file"`
+    Line                 int       `json:"line"`
+    Algorithm            string    `json:"algorithm"`
+    Severity             string    `json:"severity"`
+    Category             string    `json:"category"`
+    ExposureEstimate     string    `json:"hnd_exposure_estimate"`
+    SuggestedReplacement string    `json:"suggested_replacement"`
+    RuleID               string    `json:"rule_id"`
+    Status               string    `json:"status"`
+}
+
+func (s *Store) GetOpenFindings(ctx context.Context, repoID uuid.UUID) ([]Finding, error) {
+    rows, err := s.db.Query(ctx, `
+        SELECT id, repo_id, finding_id, type, file, line, algorithm, severity, 
+               category, exposure_estimate, suggested_replacement, rule_id, status
+        FROM findings
+        WHERE repo_id = $1 AND status = 'open'
+        ORDER BY severity ASC, file ASC
+    `, repoID)
+    if err != nil {
+        return nil, err
+    }
+    defer rows.Close()
+
+    var findings []Finding
+    for rows.Next() {
+        var f Finding
+        if err := rows.Scan(&f.ID, &f.RepoID, &f.FindingID, &f.Type, &f.File, &f.Line, &f.Algorithm, &f.Severity, &f.Category, &f.ExposureEstimate, &f.SuggestedReplacement, &f.RuleID, &f.Status); err != nil {
+            return nil, err
+        }
+        findings = append(findings, f)
+    }
+    return findings, nil
+}
