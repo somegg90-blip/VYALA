@@ -17,7 +17,7 @@ jobs:
           fetch-depth: 0 # Ensure full repo is checked out for complete scanning
 
       - name: Run VYALA Scanner and Upload
-        uses: docker://ghcr.io/somegg90-blip/vyala:latest # TODO: Replace with your actual GHCR image path
+        uses: docker://ghcr.io/somegg90-blip/vyala-action:latest # TODO: Replace with your actual GHCR image path
         env:
           # The VYALA uploader package reads these automatically to populate the CBOM metadata
           GITHUB_REPOSITORY: ${{ github.repository }}
