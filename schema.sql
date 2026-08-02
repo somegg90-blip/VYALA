@@ -65,3 +65,15 @@ CREATE TABLE IF NOT EXISTS findings (
     UNIQUE (repo_id, finding_id)
 );
 CREATE INDEX IF NOT EXISTS idx_findings_repo_status ON findings(repo_id, status);
+
+-- Wishlist & Early Access Passes
+CREATE TABLE IF NOT EXISTS wishlist (
+    id UUID PRIMARY KEY DEFAULT gen_random_uuid(),
+    name VARCHAR(255),
+    email VARCHAR(255) NOT NULL,
+    role VARCHAR(100),
+    pass_code VARCHAR(64) UNIQUE,
+    wish TEXT,
+    created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
+);
+CREATE INDEX IF NOT EXISTS idx_wishlist_email ON wishlist(email);

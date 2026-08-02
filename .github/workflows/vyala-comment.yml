@@ -1,43 +1,43 @@
-name: VYALA – Post PR Comment
+name: VYALA PR Comment
 
 on:
   workflow_run:
-    workflows: ["VYALA PQC Scan (PR)"]
-    types:
-      - completed
+    workflows: ["VYALA PR Scan"]
+    types: [completed]
 
 permissions:
   pull-requests: write
-  actions: read
-  packages: read
+  contents: read
+
+# Prevent racing double-posts
+concurrency:
+  group: vyala-comment-${{ github.event.workflow_run.id }}
 
 jobs:
   comment:
-    if: ${{ github.event.workflow_run.conclusion == 'success' }}
     runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure'
     steps:
-      - name: Download CBOM artifact
+      - name: Download CBOM Artifact
         uses: actions/download-artifact@v4
         with:
           name: vyala-cbom-${{ github.event.workflow_run.id }}
-          path: ${{ github.workspace }}
           run-id: ${{ github.event.workflow_run.id }}
           github-token: ${{ secrets.GITHUB_TOKEN }}
 
-      - name: Read PR metadata
+      - name: Read + validate PR metadata
         id: prmeta
         run: |
-          echo "pr_number=$(cat ${{ github.workspace }}/pr_number.txt)" >> "$GITHUB_OUTPUT"
-          echo "head_sha=$(cat ${{ github.workspace }}/head_sha.txt)" >> "$GITHUB_OUTPUT"
+          PR=$(cat pr_number.txt); SHA=$(cat head_sha.txt)
+          [[ "$PR" =~ ^[0-9]+$ ]] || { echo "invalid pr number"; exit 1; }
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "invalid sha"; exit 1; }
+          echo "pr_number=$PR" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$SHA" >> "$GITHUB_OUTPUT"
 
-      - name: Post PR comment using prebuilt action image
-        uses: docker://ghcr.io/somegg90-blip/vyala-action:latest
+      - name: Post PR Comment
+        # FIXED: Pin to immutable version tag, not latest
+        uses: docker://ghcr.io/somegg90-blip/vyala-action:v1.1.0
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          severity-threshold: medium
-          post-comment: true
+          args: scan --comment-from-file cbom.json --pr-number ${{ steps.prmeta.outputs.pr_number }} --head-sha ${{ steps.prmeta.outputs.head_sha }}
         env:
-          CBOM_FILE: /github/workspace/vyala-cbom.json
-          PR_NUMBER: ${{ steps.prmeta.outputs.pr_number }}
-          HEAD_SHA: ${{ steps.prmeta.outputs.head_sha }}
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

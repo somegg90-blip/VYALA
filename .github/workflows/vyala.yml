@@ -1,39 +1,30 @@
-name: VYALA PQC Scan (PR)
+name: VYALA PR Scan
 
 on:
   pull_request:
-    types: [opened, synchronize, reopened]
 
 permissions:
   contents: read
-  pull-requests: read
-  actions: write
 
 jobs:
   scan:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
           fetch-depth: 0
 
-      - name: Run VYALA scan (no comment on fork PRs)
-        uses: ./
+      - name: Run VYALA Scanner
+        # FIXED: Use the published Docker image instead of `./` to prevent PR code execution
+        uses: docker://ghcr.io/somegg90-blip/vyala-action:v1.1.0
         with:
-          post-comment: false
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-
-      - name: Write PR metadata
-        run: |
-          echo "${{ github.event.pull_request.number }}" > "${{ github.workspace }}/pr_number.txt"
-          echo "${{ github.event.pull_request.head.sha }}" > "${{ github.workspace }}/head_sha.txt"
-
-      - name: Upload CBOM artifact
+          args: scan --path . --json cbom.json --diff-base origin/${{ github.base_ref }}
+      
+      - name: Upload CBOM Artifact
+        if: always() # Upload even if scanner fails so we can post an error comment
         uses: actions/upload-artifact@v4
         with:
           name: vyala-cbom-${{ github.run_id }}
-          path: |
-            ${{ github.workspace }}/vyala-cbom.json
-            ${{ github.workspace }}/pr_number.txt
-            ${{ github.workspace }}/head_sha.txt
+          path: cbom.json
           retention-days: 1

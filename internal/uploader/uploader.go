@@ -18,7 +18,21 @@ type Payload struct {
 	Branch       string        `json:"branch"`
 	TriggerType  string        `json:"trigger_type"`
 	IsPrivate    bool          `json:"is_private"`
+	Status       string        `json:"status"`
 	CBOM         findings.CBOM `json:"cbom"`
+}
+
+func buildPayload(cbom findings.CBOM, repoFullName, commitSHA, branch, triggerType string, githubRepoID int64, isPrivate bool) Payload {
+	return Payload{
+		RepoFullName: repoFullName,
+		GithubRepoID: githubRepoID,
+		CommitSHA:    commitSHA,
+		Branch:       branch,
+		TriggerType:  triggerType,
+		IsPrivate:    isPrivate,
+		Status:       "success",
+		CBOM:         cbom,
+	}
 }
 
 func UploadCBOM(cbom findings.CBOM, apiURL, apiKey string) error {
@@ -55,14 +69,7 @@ func UploadCBOM(cbom findings.CBOM, apiURL, apiKey string) error {
 		githubRepoID = 1
 	}
 
-	payload := Payload{
-		RepoFullName: repoFullName,
-		GithubRepoID: githubRepoID,
-		CommitSHA:    commitSHA,
-		Branch:       branch,
-		TriggerType:  triggerType,
-		CBOM:         cbom,
-	}
+	payload := buildPayload(cbom, repoFullName, commitSHA, branch, triggerType, githubRepoID, false)
 
 	jsonData, err := json.Marshal(payload)
 	if err != nil {
