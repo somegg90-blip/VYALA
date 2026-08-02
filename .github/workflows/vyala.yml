@@ -16,15 +16,24 @@ jobs:
           fetch-depth: 0
 
       - name: Run VYALA Scanner
-        # FIXED: Use the published Docker image instead of `./` to prevent PR code execution
         uses: docker://ghcr.io/somegg90-blip/vyala-action:v1.2.0
         with:
-          args: --path . --json cbom.json ${{ github.base_ref }}
+          args: --path . --json cbom.json
+      
+      # NEW: Write PR metadata to text files for the comment workflow
+      - name: Write PR Metadata
+        run: |
+          echo "${{ github.event.pull_request.number }}" > pr_number.txt
+          echo "${{ github.event.pull_request.head.sha }}" > head_sha.txt
       
       - name: Upload CBOM Artifact
-        if: always() # Upload even if scanner fails so we can post an error comment
+        if: always()
         uses: actions/upload-artifact@v4
         with:
           name: vyala-cbom-${{ github.run_id }}
-          path: cbom.json
+          # Upload both the cbom and the text files
+          path: |
+            cbom.json
+            pr_number.txt
+            head_sha.txt
           retention-days: 1
