@@ -17,7 +17,7 @@ jobs:
 
       - name: Run VYALA Scanner
         # FIXED: Use the published Docker image instead of `./` to prevent PR code execution
-        uses: docker://ghcr.io/somegg90-blip/vyala-action:v1.1.0
+        uses: docker://ghcr.io/somegg90-blip/vyala-action:v1.2.0
         with:
           args: scan --path . --json cbom.json --diff-base origin/${{ github.base_ref }}
       
