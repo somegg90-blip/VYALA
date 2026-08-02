@@ -19,11 +19,11 @@ jobs:
           fetch-depth: 0 
 
       - name: Run VYALA Scanner and Upload
-        uses: docker://ghcr.io/somegg90-blip/vyala-action:v1.1.0
+        uses: docker://ghcr.io/somegg90-blip/vyala-action:v1.2.0
         env:
           GITHUB_REPOSITORY: ${{ github.repository }}
           GITHUB_SHA: ${{ github.sha }}
           GITHUB_REF: ${{ github.ref }}
           GITHUB_EVENT_NAME: 'scheduled'
         with:
-          args: scan --path . --upload-url ${{ secrets.VYALA_BACKEND_URL }} --api-key ${{ secrets.VYALA_API_KEY }}
+          args: --path . --upload-url ${{ secrets.VYALA_BACKEND_URL }} --api-key ${{ secrets.VYALA_API_KEY }}

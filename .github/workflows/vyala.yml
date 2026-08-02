@@ -19,7 +19,7 @@ jobs:
         # FIXED: Use the published Docker image instead of `./` to prevent PR code execution
         uses: docker://ghcr.io/somegg90-blip/vyala-action:v1.2.0
         with:
-          args: scan --path . --json cbom.json --diff-base origin/${{ github.base_ref }}
+          args: --path . --json cbom.json --diff-base origin/${{ github.base_ref }}
       
       - name: Upload CBOM Artifact
         if: always() # Upload even if scanner fails so we can post an error comment

@@ -36,8 +36,8 @@ jobs:
 
       - name: Post PR Comment
         # FIXED: Pin to immutable version tag, not latest
-        uses: docker://ghcr.io/somegg90-blip/vyala-action:v1.1.0
+        uses: docker://ghcr.io/somegg90-blip/vyala-action:v1.2.0
         with:
-          args: scan --comment-from-file cbom.json --pr-number ${{ steps.prmeta.outputs.pr_number }} --head-sha ${{ steps.prmeta.outputs.head_sha }}
+          args: --comment-from-file cbom.json --pr-number ${{ steps.prmeta.outputs.pr_number }} --head-sha ${{ steps.prmeta.outputs.head_sha }}
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
