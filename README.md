@@ -7,7 +7,7 @@
 A CI-native tool that detects quantum-vulnerable crypto in your codebase and posts actionable findings directly on pull requests.
 
 [![Go Version](https://img.shields.io/badge/Go-1.22+-00ADD8?style=flat&logo=go&logoColor=white)](https://go.dev)
-[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat)](https://www.apache.org/licenses/LICENSE-2.0)(LICENSE)
+[![License: Apache 2.0](https://img.shields.io/badge/License-Apache%202.0-blue.svg?style=flat)](https://www.apache.org/licenses/LICENSE-2.0)
 [![Semgrep](https://img.shields.io/badge/powered%20by-Semgrep-1B1B1B?style=flat&logo=semgrep&logoColor=white)](https://semgrep.dev)
 [![NIST FIPS 203/204/205](https://img.shields.io/badge/NIST-FIPS%20203%20%7C%20204%20%7C%20205-002868?style=flat)](https://csrc.nist.gov/pubs/fips/203/final)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg?style=flat)](CONTRIBUTING.md)
@@ -18,11 +18,11 @@ A CI-native tool that detects quantum-vulnerable crypto in your codebase and pos
 
 ## What it does
 
-- 🔍 **Scans Python, JavaScript/TypeScript** for RSA, ECDSA/ECDH, DH, and MD5/SHA‑1 in security contexts
+- 🔍 **Hybrid Scanning:** Checks Code (Python, JS/TS, Go, Java, C/C++, C#, Rust), Dependencies (package.json, pyproject.toml, requirements.txt), Infrastructure-as-Code (Terraform, K8s), and Live TLS Endpoints.
 - ⚙️ **Runs as a CLI** (`vyala --path .`) or as a **GitHub Action** on pull requests
-- ⚡ **Diff-aware** — only scans changed lines, keeps PR comments under 30 seconds
-- 🆔 **Stable finding IDs** — the same code always produces the same ID, so re-scans update the existing PR comment instead of spamming
-- 📋 **CBOM output** — structured JSON (Cryptographic Bill of Materials) for compliance and tracking, with each finding mapped to its NIST-standard replacement
+- ⚡ **Diff-aware** — Only scans changed lines, keeps PR comments under 30 seconds, and uses a secure two-workflow architecture to safely comment on external fork PRs.
+- 🆔 **Stable finding IDs** — The same code always produces the same ID, so re-scans update the existing PR comment instead of spamming.
+- 📋 **CBOM output** —  Uploads a structured Cryptographic Bill of Materials (CBOM) to track your security posture over time, automatically marking resolved findings.
 
 ---
 
