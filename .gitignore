@@ -52,3 +52,5 @@ dump.sql
 # ---------- Test Coverage ----------
 coverage.out
 coverage.html
+
+web
