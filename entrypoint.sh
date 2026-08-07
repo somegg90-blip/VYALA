@@ -1,6 +1,12 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
+# FIX: GitHub Actions forces HOME=/github/home, which is owned by the runner (UID 1001).
+# Since we run as the 'vyala' user (UID 1000), Semgrep gets a Permission Denied error
+# when it tries to create its ~/.semgrep log directory.
+# Overriding HOME to /tmp solves this cleanly without compromising security.
+export HOME=/tmp
+
 # If args are provided (like "scan --path . --upload-url ..."), run them directly.
 # The Go binary handles all the logic.
 if [ -n "${INPUT_ARGS:-}" ]; then
@@ -26,21 +32,18 @@ if [ -z "${GITHUB_EVENT_PATH:-}" ] || [ ! -f "${GITHUB_EVENT_PATH:-}" ]; then
   exit 1
 fi
 
-# Safely extract BASE_SHA based on the GitHub event type
 EVENT_NAME="${GITHUB_EVENT_NAME:-}"
 BASE_SHA=""
 
 if [ "$EVENT_NAME" = "pull_request" ] || [ "$EVENT_NAME" = "pull_request_target" ]; then
   BASE_SHA=$(python3 -c "import json; print(json.load(open('${GITHUB_EVENT_PATH}'))['pull_request']['base']['sha'])")
 elif [ "$EVENT_NAME" = "push" ]; then
-  # For push events, the base is the commit before the push
   BASE_SHA=$(python3 -c "import json; print(json.load(open('${GITHUB_EVENT_PATH}')).get('before', ''))")
 else
   echo "vyala: Unsupported event type '${EVENT_NAME}' for diff scanning. Running full scan." >&2
   BASE_SHA=""
 fi
 
-# Fetch base commit if it's missing from the local clone (common in shallow clones)
 if [ -n "$BASE_SHA" ]; then
   if ! git -C "${GITHUB_WORKSPACE}" cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
     echo "Fetching missing base commit ${BASE_SHA}..."
@@ -55,7 +58,6 @@ ARGS=(
   -json "${GITHUB_WORKSPACE}/vyala-cbom.json"
 )
 
-# Only add diff-base if we successfully found a base SHA
 if [ -n "$BASE_SHA" ]; then
   ARGS+=(-diff-base "${BASE_SHA}")
 fi
