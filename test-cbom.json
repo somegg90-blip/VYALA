@@ -1,0 +1,66 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-08-07T08:10:00.807994793Z",
+  "findings": [
+    {
+      "finding_id": "vy-195c769255c3b345",
+      "type": "code",
+      "file": "internal/rules/k8s-insecure-cipher.yaml",
+      "line": 12,
+      "algorithm": "TLS",
+      "severity": "high",
+      "category": "iac_misconfiguration",
+      "hnd_exposure_estimate": "",
+      "suggested_replacement": "Remove hardcoded classical ciphers (ECDHE-RSA) and use hybrid PQC suites if supported by the ingress controller.",
+      "rule_id": "internal.rules.k8s-insecure-cipher-suites"
+    },
+    {
+      "finding_id": "vy-d4dec7332d8e8ff2",
+      "type": "code",
+      "file": "testdata/ecdsa-signing/algorithms.py",
+      "line": 6,
+      "algorithm": "ECDSA",
+      "severity": "medium",
+      "category": "ecdsa_signing_usage",
+      "hnd_exposure_estimate": "",
+      "suggested_replacement": "Replace with ML-DSA (Dilithium) or SLH-DSA (SPHINCS+), or hybrid ECDH+Kyber for key exchange.",
+      "rule_id": "internal.rules.pqc-ecdsa-signing-usage-python"
+    },
+    {
+      "finding_id": "vy-aec08938e45e552a",
+      "type": "code",
+      "file": "testdata/rsa-keygen/test.py",
+      "line": 3,
+      "algorithm": "RSA",
+      "severity": "medium",
+      "category": "rsa_keygen",
+      "hnd_exposure_estimate": "",
+      "suggested_replacement": "Replace with ML-KEM (e.g., CRYSTALS-Kyber) using a hybrid construction. For Python: consider liboqs-python with hybrid key exchange.",
+      "rule_id": "internal.rules.pqc-rsa-keygen-python"
+    },
+    {
+      "finding_id": "vy-e0e63ae1075b7cc6",
+      "type": "code",
+      "file": "testdata/vulnerable-iac/ingress.yaml",
+      "line": 10,
+      "algorithm": "TLS",
+      "severity": "high",
+      "category": "iac_misconfiguration",
+      "hnd_exposure_estimate": "",
+      "suggested_replacement": "Remove hardcoded classical ciphers (ECDHE-RSA) and use hybrid PQC suites if supported by the ingress controller.",
+      "rule_id": "internal.rules.k8s-insecure-cipher-suites"
+    },
+    {
+      "finding_id": "vy-4d37100d371882e7",
+      "type": "code",
+      "file": "testdata/vulnerable-iac/main.tf",
+      "line": 13,
+      "algorithm": "TLS",
+      "severity": "medium",
+      "category": "iac_misconfiguration",
+      "hnd_exposure_estimate": "",
+      "suggested_replacement": "Use TLS 1.3 with hybrid PQC key exchange (ML-KEM/ML-DSA) where supported by the cloud provider.",
+      "rule_id": "internal.rules.terraform-aws-insecure-tls"
+    }
+  ]
+}

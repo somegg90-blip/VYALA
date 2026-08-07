@@ -29,13 +29,13 @@ jobs:
         id: prmeta
         run: |
           PR=$(cat pr_number.txt); SHA=$(cat head_sha.txt)
+          # Regex validation prevents command injection in the next step
           [[ "$PR" =~ ^[0-9]+$ ]] || { echo "invalid pr number"; exit 1; }
           [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "invalid sha"; exit 1; }
           echo "pr_number=$PR" >> "$GITHUB_OUTPUT"
           echo "head_sha=$SHA" >> "$GITHUB_OUTPUT"
 
       - name: Post PR Comment
-        # FIXED: Pin to immutable version tag, not latest
         uses: docker://ghcr.io/somegg90-blip/vyala-action:v1.2.0
         with:
           args: --comment-from-file cbom.json --pr-number ${{ steps.prmeta.outputs.pr_number }} --head-sha ${{ steps.prmeta.outputs.head_sha }}

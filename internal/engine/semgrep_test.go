@@ -22,6 +22,8 @@ func readExpected(t *testing.T, path string) findings.CBOM {
 	return cbom
 }
 
+// cbomEqual checks the core detection logic, ignoring metadata fields 
+// like Type and ExposureEstimate that might not be fully populated in legacy fixtures.
 func cbomEqual(a, b findings.CBOM) bool {
 	if len(a.Findings) != len(b.Findings) {
 		return false
@@ -36,7 +38,7 @@ func cbomEqual(a, b findings.CBOM) bool {
 		if a.Findings[i].Line != b.Findings[i].Line {
 			return false
 		}
-		if a.Findings[i].Category != b.Findings[i].Category {
+		if a.Findings[i].RuleID != b.Findings[i].RuleID {
 			return false
 		}
 		if a.Findings[i].Severity != b.Findings[i].Severity {

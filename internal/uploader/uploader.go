@@ -6,11 +6,12 @@ import (
 	"fmt"
 	"net/http"
 	"os"
+	"strconv"
+	"time"
 
 	"vyala/internal/findings"
 )
 
-// Payload matches the ScanRequest struct from the backend
 type Payload struct {
 	RepoFullName string        `json:"repo_full_name"`
 	GithubRepoID int64         `json:"github_repo_id"`
@@ -36,37 +37,25 @@ func buildPayload(cbom findings.CBOM, repoFullName, commitSHA, branch, triggerTy
 }
 
 func UploadCBOM(cbom findings.CBOM, apiURL, apiKey string) error {
-	// Gather metadata from GitHub Actions environment variables
 	repoFullName := os.Getenv("GITHUB_REPOSITORY")
 	commitSHA := os.Getenv("GITHUB_SHA")
 	branch := os.Getenv("GITHUB_REF")
 	triggerType := os.Getenv("GITHUB_EVENT_NAME")
 
-	// GITHUB_REF looks like "refs/heads/main", we just want "main"
 	if len(branch) > 11 && branch[:11] == "refs/heads/" {
 		branch = branch[11:]
 	}
 
-	// For local testing, provide fallbacks
-	if repoFullName == "" {
-		repoFullName = "local-test/repo"
-	}
-	if commitSHA == "" {
-		commitSHA = "local-sha"
-	}
-	if branch == "" {
-		branch = "main"
-	}
-	if triggerType == "" {
-		triggerType = "manual"
-	}
+	if repoFullName == "" { repoFullName = "local-test/repo" }
+	if commitSHA == "" { commitSHA = "local-sha" }
+	if branch == "" { branch = "main" }
+	if triggerType == "" { triggerType = "manual" }
 
-	// Generate a dummy GithubRepoID for local testing if not in CI
 	var githubRepoID int64 = 1
-	if os.Getenv("GITHUB_REPOSITORY_ID") != "" {
-		// In real CI, this env var is available
-		// (We'll use a real parsing function later, for now just fallback to 1 if not present)
-		githubRepoID = 1
+	if repoIDStr := os.Getenv("GITHUB_REPOSITORY_ID"); repoIDStr != "" {
+		if parsed, err := strconv.ParseInt(repoIDStr, 10, 64); err == nil {
+			githubRepoID = parsed
+		}
 	}
 
 	payload := buildPayload(cbom, repoFullName, commitSHA, branch, triggerType, githubRepoID, false)
@@ -76,27 +65,42 @@ func UploadCBOM(cbom findings.CBOM, apiURL, apiKey string) error {
 		return fmt.Errorf("marshaling payload: %w", err)
 	}
 
-	req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
+	// FIX: Add strict timeout to prevent CI hangs
+	client := &http.Client{Timeout: 30 * time.Second}
+	
+	var resp *http.Response
+	
+	// FIX: Retry loop for network resilience
+	for attempt := 1; attempt <= 3; attempt++ {
+		req, err := http.NewRequest("POST", apiURL, bytes.NewBuffer(jsonData))
+		if err != nil {
+			return fmt.Errorf("creating request: %w", err)
+		}
+		req.Header.Set("Content-Type", "application/json")
+		if apiKey != "" {
+			req.Header.Set("Authorization", "Bearer "+apiKey)
+		}
+
+		resp, err = client.Do(req)
+		
+		// Success condition: 200 OK or 201 Created
+		if err == nil && (resp.StatusCode == http.StatusOK || resp.StatusCode == http.StatusCreated) {
+			resp.Body.Close()
+			fmt.Println("✅ CBOM successfully uploaded to VYALA backend.")
+			return nil
+		}
+
+		if resp != nil {
+			resp.Body.Close()
+		}
+
+		if attempt < 3 {
+			time.Sleep(time.Duration(attempt) * time.Second)
+		}
+	}
+
 	if err != nil {
-		return fmt.Errorf("creating request: %w", err)
+		return fmt.Errorf("uploading CBOM failed after 3 attempts: %w", err)
 	}
-
-	req.Header.Set("Content-Type", "application/json")
-	if apiKey != "" {
-		req.Header.Set("Authorization", "Bearer "+apiKey)
-	}
-
-	client := &http.Client{}
-	resp, err := client.Do(req)
-	if err != nil {
-		return fmt.Errorf("uploading CBOM: %w", err)
-	}
-	defer resp.Body.Close()
-
-	if resp.StatusCode != http.StatusCreated {
-		return fmt.Errorf("backend rejected upload with status: %s", resp.Status)
-	}
-
-	fmt.Println("✅ CBOM successfully uploaded to VYALA backend.")
-	return nil
+	return fmt.Errorf("backend rejected upload after 3 attempts with status: %s", resp.Status)
 }

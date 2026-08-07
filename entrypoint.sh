@@ -8,7 +8,7 @@ if [ -n "${INPUT_ARGS:-}" ]; then
   exec /usr/local/bin/vyala ${INPUT_ARGS}
 fi
 
-# ---------- Comment‑from‑file mode ----------
+# ---------- Comment-from-file mode ----------
 if [ -n "${CBOM_FILE:-}" ]; then
   exec /usr/local/bin/vyala \
     -comment-from-file "${CBOM_FILE}" \
@@ -26,19 +26,39 @@ if [ -z "${GITHUB_EVENT_PATH:-}" ] || [ ! -f "${GITHUB_EVENT_PATH:-}" ]; then
   exit 1
 fi
 
-BASE_SHA=$(python3 -c "import json; print(json.load(open('${GITHUB_EVENT_PATH}'))['pull_request']['base']['sha'])")
+# Safely extract BASE_SHA based on the GitHub event type
+EVENT_NAME="${GITHUB_EVENT_NAME:-}"
+BASE_SHA=""
 
-if ! git -C "${GITHUB_WORKSPACE}" cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
-  git -C "${GITHUB_WORKSPACE}" fetch --depth=1 --no-tags origin "${BASE_SHA}" 2>/dev/null \
-    || git -C "${GITHUB_WORKSPACE}" fetch --unshallow --no-tags origin
+if [ "$EVENT_NAME" = "pull_request" ] || [ "$EVENT_NAME" = "pull_request_target" ]; then
+  BASE_SHA=$(python3 -c "import json; print(json.load(open('${GITHUB_EVENT_PATH}'))['pull_request']['base']['sha'])")
+elif [ "$EVENT_NAME" = "push" ]; then
+  # For push events, the base is the commit before the push
+  BASE_SHA=$(python3 -c "import json; print(json.load(open('${GITHUB_EVENT_PATH}')).get('before', ''))")
+else
+  echo "vyala: Unsupported event type '${EVENT_NAME}' for diff scanning. Running full scan." >&2
+  BASE_SHA=""
+fi
+
+# Fetch base commit if it's missing from the local clone (common in shallow clones)
+if [ -n "$BASE_SHA" ]; then
+  if ! git -C "${GITHUB_WORKSPACE}" cat-file -e "${BASE_SHA}^{commit}" 2>/dev/null; then
+    echo "Fetching missing base commit ${BASE_SHA}..."
+    git -C "${GITHUB_WORKSPACE}" fetch --depth=1 --no-tags origin "${BASE_SHA}" 2>/dev/null \
+      || git -C "${GITHUB_WORKSPACE}" fetch --unshallow --no-tags origin 2>/dev/null || true
+  fi
 fi
 
 ARGS=(
   -path "${GITHUB_WORKSPACE}"
-  -diff-base "${BASE_SHA}"
   -severity-threshold "${INPUT_SEVERITY_THRESHOLD:-medium}"
   -json "${GITHUB_WORKSPACE}/vyala-cbom.json"
 )
+
+# Only add diff-base if we successfully found a base SHA
+if [ -n "$BASE_SHA" ]; then
+  ARGS+=(-diff-base "${BASE_SHA}")
+fi
 
 if [ "${POST_PR_COMMENT:-true}" = "true" ]; then
   ARGS+=(-post-pr-comment)

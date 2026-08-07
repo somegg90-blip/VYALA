@@ -1,29 +1,43 @@
-name: VYALA Nightly Scan
+name: VYALA PR Comment
 
 on:
-  schedule:
-    - cron: '0 0 * * *'
-  workflow_dispatch:
+  workflow_run:
+    workflows: ["VYALA PR Scan"]
+    types: [completed]
 
 permissions:
-  packages: read
+  pull-requests: write
   contents: read
 
-jobs:
-  scheduled-scan:
-    runs-on: ubuntu-latest
-    steps:
-      - name: Checkout repository
-        uses: actions/checkout@v4
-        with:
-          fetch-depth: 0 
+# Prevent racing double-posts
+concurrency:
+  group: vyala-comment-${{ github.event.workflow_run.id }}
 
-      - name: Run VYALA Scanner and Upload
-        uses: docker://ghcr.io/somegg90-blip/vyala-action:v1.2.0
-        env:
-          GITHUB_REPOSITORY: ${{ github.repository }}
-          GITHUB_SHA: ${{ github.sha }}
-          GITHUB_REF: ${{ github.ref }}
-          GITHUB_EVENT_NAME: 'scheduled'
+jobs:
+  comment:
+    runs-on: ubuntu-latest
+    if: github.event.workflow_run.conclusion == 'success' || github.event.workflow_run.conclusion == 'failure'
+    steps:
+      - name: Download CBOM Artifact
+        uses: actions/download-artifact@v4
         with:
-          args: --path . --upload-url ${{ secrets.VYALA_BACKEND_URL }} --api-key ${{ secrets.VYALA_API_KEY }}
+          name: vyala-cbom-${{ github.event.workflow_run.id }}
+          run-id: ${{ github.event.workflow_run.id }}
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Read + validate PR metadata
+        id: prmeta
+        run: |
+          PR=$(cat pr_number.txt); SHA=$(cat head_sha.txt)
+          # Regex validation prevents command injection in the next step
+          [[ "$PR" =~ ^[0-9]+$ ]] || { echo "invalid pr number"; exit 1; }
+          [[ "$SHA" =~ ^[0-9a-f]{40}$ ]] || { echo "invalid sha"; exit 1; }
+          echo "pr_number=$PR" >> "$GITHUB_OUTPUT"
+          echo "head_sha=$SHA" >> "$GITHUB_OUTPUT"
+
+      - name: Post PR Comment
+        uses: docker://ghcr.io/somegg90-blip/vyala-action:v1.2.0
+        with:
+          args: --comment-from-file cbom.json --pr-number ${{ steps.prmeta.outputs.pr_number }} --head-sha ${{ steps.prmeta.outputs.head_sha }}
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

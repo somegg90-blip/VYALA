@@ -5,14 +5,13 @@ import (
 	"net/http"
 	"net/http/httptest"
 	"strconv"
+	"strings"
 	"sync"
 	"testing"
 
 	"vyala/internal/findings"
 )
 
-// fakeGitHub emulates just enough of the issues/comments API to exercise
-// PostOrUpdate's find-or-create logic.
 type fakeGitHub struct {
 	mu       sync.Mutex
 	comments map[int64]string
@@ -47,9 +46,12 @@ func (f *fakeGitHub) handler() http.HandlerFunc {
 		case r.Method == http.MethodPatch:
 			var body ghComment
 			json.NewDecoder(r.Body).Decode(&body)
-			// crude: id is last path segment
-			idStr := r.URL.Path[len(r.URL.Path)-1:]
+			
+			// FIX: Robustly extract ID from URL path (e.g., /comments/10)
+			parts := strings.Split(r.URL.Path, "/")
+			idStr := parts[len(parts)-1]
 			id, _ := strconv.ParseInt(idStr, 10, 64)
+			
 			f.comments[id] = body.Body
 			f.updates++
 			json.NewEncoder(w).Encode(ghComment{ID: id, Body: body.Body})
@@ -77,7 +79,6 @@ func TestPostOrUpdate_CreatesOnceThenUpdates(t *testing.T) {
 		t.Fatalf("expected 1 create, 0 updates after first run; got creates=%d updates=%d", fake.creates, fake.updates)
 	}
 
-	// Simulate a second Action run on a new push -- same PR, new SHA, same finding.
 	body2 := RenderComment(cbom, cfg.Repo, "sha2", "medium")
 	if err := PostOrUpdate(cfg, 42, body2); err != nil {
 		t.Fatalf("second post: %v", err)
@@ -94,22 +95,9 @@ func TestPostOrUpdate_CreatesOnceThenUpdates(t *testing.T) {
 func TestRenderComment_NoFindings(t *testing.T) {
 	cbom := findings.CBOM{Version: "1.0"}
 	body := RenderComment(cbom, "acme/widgets", "sha1", "medium")
-	if !containsMarker(body) {
+	
+	// FIX: Use standard library strings.Contains
+	if !strings.Contains(body, Marker) {
 		t.Fatal("comment must always contain the hidden dedup marker, even with zero findings")
 	}
-}
-
-func containsMarker(s string) bool {
-	return len(s) > 0 && (func() bool {
-		return (len(s) >= len(Marker)) && (indexOf(s, Marker) >= 0)
-	})()
-}
-
-func indexOf(s, sub string) int {
-	for i := 0; i+len(sub) <= len(s); i++ {
-		if s[i:i+len(sub)] == sub {
-			return i
-		}
-	}
-	return -1
 }

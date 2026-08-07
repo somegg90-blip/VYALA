@@ -110,7 +110,9 @@ func doRequest(cfg Config, method, url string, reqBody interface{}, respOut inte
 	if resp.StatusCode >= 300 {
 		return fmt.Errorf("%s %s -> %d: %s", method, url, resp.StatusCode, string(data))
 	}
-	if respOut != nil {
+	
+	// FIX: Prevent panic on empty response bodies (e.g. 204 No Content)
+	if respOut != nil && len(data) > 0 {
 		if err := json.Unmarshal(data, respOut); err != nil {
 			return fmt.Errorf("decoding response from %s: %w", url, err)
 		}

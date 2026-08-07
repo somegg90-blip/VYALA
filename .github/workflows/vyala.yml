@@ -20,7 +20,7 @@ jobs:
         with:
           args: --path . --json cbom.json
       
-      # NEW: Write PR metadata to text files for the comment workflow
+      # Write PR metadata to text files for the privileged comment workflow
       - name: Write PR Metadata
         run: |
           echo "${{ github.event.pull_request.number }}" > pr_number.txt
@@ -31,7 +31,6 @@ jobs:
         uses: actions/upload-artifact@v4
         with:
           name: vyala-cbom-${{ github.run_id }}
-          # Upload both the cbom and the text files
           path: |
             cbom.json
             pr_number.txt

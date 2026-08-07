@@ -4,22 +4,17 @@ import (
 	"crypto/tls"
 	"crypto/x509"
 	"fmt"
+	"net"
 	"strings"
+	"time"
 
 	"vyala/internal/findings"
 )
 
-// knownHybridPQCGroups maps TLS SupportedGroup/CurveID values (per the IANA TLS
-// registry) to their names, covering both the finalized standard and the earlier
-// drafts still seen in production deployments (e.g. Cloudflare, Chrome).
-//
-// Raw numeric IDs are used rather than only Go's named stdlib constants, since
-// not every Go version exports every group as a constant, and IDs are stable
-// across versions regardless.
 var knownHybridPQCGroups = map[uint16]string{
-	0x11EC: "X25519MLKEM768",        // finalized standard hybrid group
-	0xFE30: "X25519Kyber512Draft00", // early Cloudflare/Chrome draft
-	0xFE31: "X25519Kyber768Draft00", // early Cloudflare/Chrome draft
+	0x11EC: "X25519MLKEM768",
+	0xFE30: "X25519Kyber512Draft00",
+	0xFE31: "X25519Kyber768Draft00",
 }
 
 func ScanTLSProbes(endpoints []string) ([]findings.Finding, error) {
@@ -27,7 +22,7 @@ func ScanTLSProbes(endpoints []string) ([]findings.Finding, error) {
 	for _, raw := range endpoints {
 		endpoint := strings.TrimSpace(raw)
 		if endpoint == "" {
-			continue // guards against trailing/duplicate commas in the flag value
+			continue
 		}
 		if !strings.Contains(endpoint, ":") {
 			endpoint = endpoint + ":443"
@@ -43,8 +38,20 @@ func ScanTLSProbes(endpoints []string) ([]findings.Finding, error) {
 }
 
 func probeEndpoint(endpoint string) ([]findings.Finding, error) {
-	conn, err := tls.Dial("tcp", endpoint, &tls.Config{
-		InsecureSkipVerify: true, // we're inspecting the handshake, not validating trust
+	// Extract hostname for SNI (Server Name Indication)
+	hostname := endpoint
+	if idx := strings.LastIndex(endpoint, ":"); idx != -1 {
+		hostname = endpoint[:idx]
+	}
+
+	// FIX: Use a strict 5-second timeout to prevent hanging on blackholed IPs
+	dialer := &net.Dialer{
+		Timeout: 5 * time.Second,
+	}
+
+	conn, err := tls.DialWithDialer(dialer, "tcp", endpoint, &tls.Config{
+		InsecureSkipVerify: true,
+		ServerName:         hostname, // Crucial for SNI
 	})
 	if err != nil {
 		return nil, err
@@ -55,11 +62,8 @@ func probeEndpoint(endpoint string) ([]findings.Finding, error) {
 	var results []findings.Finding
 	cipherName := tls.CipherSuiteName(state.CipherSuite)
 
-	// ---------- CHECK 1: Key exchange — the HNDL-relevant signal ----------
 	switch {
 	case state.Version < tls.VersionTLS13:
-		// No version of TLS before 1.3 offers any hybrid/PQC key exchange option —
-		// every negotiated suite here is unambiguously classical.
 		results = append(results, findings.Finding{
 			ID:                   findings.GenerateFindingID("tls-kex", endpoint, 1),
 			Type:                 "tls",
@@ -73,7 +77,6 @@ func probeEndpoint(endpoint string) ([]findings.Finding, error) {
 		})
 
 	default:
-		// TLS 1.3: check the actual negotiated group.
 		groupID := uint16(state.CurveID)
 		if _, isHybrid := knownHybridPQCGroups[groupID]; !isHybrid {
 			results = append(results, findings.Finding{
@@ -88,11 +91,8 @@ func probeEndpoint(endpoint string) ([]findings.Finding, error) {
 				RuleID:               "tls-kex-probe",
 			})
 		}
-		// If it IS a known hybrid group: correctly no finding. This is the fix —
-		// previously this branch was entirely skipped to avoid guessing.
 	}
 
-	// ---------- CHECK 2: Certificate signing — real, but lower urgency ----------
 	if len(state.PeerCertificates) > 0 {
 		cert := state.PeerCertificates[0]
 		if cert.PublicKeyAlgorithm == x509.RSA || cert.PublicKeyAlgorithm == x509.ECDSA {

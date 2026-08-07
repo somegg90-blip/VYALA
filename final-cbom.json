@@ -1,0 +1,54 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-08-07T08:55:02.782116377Z",
+  "findings": [
+    {
+      "finding_id": "vy-7743e91e2a63a19b",
+      "type": "code",
+      "file": "testdata/ecdsa-signing/algorithms.py",
+      "line": 6,
+      "algorithm": "ECDSA",
+      "severity": "medium",
+      "category": "ecdsa_signing_usage",
+      "hnd_exposure_estimate": "",
+      "suggested_replacement": "Replace with ML-DSA (Dilithium) or SLH-DSA (SPHINCS+), or hybrid ECDH+Kyber for key exchange.",
+      "rule_id": "pqc-ecdsa-signing-usage-python"
+    },
+    {
+      "finding_id": "vy-33d8895f7f22d518",
+      "type": "code",
+      "file": "testdata/rsa-keygen/test.py",
+      "line": 3,
+      "algorithm": "RSA",
+      "severity": "medium",
+      "category": "rsa_keygen",
+      "hnd_exposure_estimate": "",
+      "suggested_replacement": "Replace with ML-KEM (e.g., CRYSTALS-Kyber) using a hybrid construction. For Python: consider liboqs-python with hybrid key exchange.",
+      "rule_id": "pqc-rsa-keygen-python"
+    },
+    {
+      "finding_id": "vy-4ecf8c94c078ea6c",
+      "type": "code",
+      "file": "testdata/vulnerable-iac/ingress.yaml",
+      "line": 10,
+      "algorithm": "TLS",
+      "severity": "high",
+      "category": "iac_misconfiguration",
+      "hnd_exposure_estimate": "",
+      "suggested_replacement": "Remove hardcoded classical ciphers (ECDHE-RSA) and use hybrid PQC suites if supported by the ingress controller.",
+      "rule_id": "k8s-insecure-cipher-suites"
+    },
+    {
+      "finding_id": "vy-0aa188731f026dda",
+      "type": "code",
+      "file": "testdata/vulnerable-iac/main.tf",
+      "line": 13,
+      "algorithm": "TLS",
+      "severity": "medium",
+      "category": "iac_misconfiguration",
+      "hnd_exposure_estimate": "",
+      "suggested_replacement": "Use TLS 1.3 with hybrid PQC key exchange (ML-KEM/ML-DSA) where supported by the cloud provider.",
+      "rule_id": "terraform-aws-insecure-tls"
+    }
+  ]
+}

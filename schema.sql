@@ -39,6 +39,7 @@ CREATE TABLE IF NOT EXISTS scans (
     branch VARCHAR(255) NOT NULL,
     trigger_type VARCHAR(50) NOT NULL,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     raw_cbom JSONB NOT NULL
 );
 CREATE INDEX IF NOT EXISTS idx_scans_repo_created ON scans(repo_id, created_at DESC);
@@ -49,7 +50,7 @@ CREATE TABLE IF NOT EXISTS findings (
     repo_id UUID REFERENCES repositories(id) ON DELETE CASCADE,
     finding_id VARCHAR(64) NOT NULL,
     type VARCHAR(50),
-    file VARCHAR(512) NOT NULL,
+    file TEXT NOT NULL, -- Changed from VARCHAR(512) to TEXT to support deep monorepo paths
     line INTEGER NOT NULL,
     algorithm VARCHAR(100) NOT NULL,
     severity VARCHAR(20) NOT NULL,
@@ -61,6 +62,7 @@ CREATE TABLE IF NOT EXISTS findings (
     first_seen_scan_id UUID REFERENCES scans(id),
     last_seen_scan_id UUID REFERENCES scans(id),
     first_seen_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
+    updated_at TIMESTAMPTZ NOT NULL DEFAULT NOW(),
     resolved_at TIMESTAMPTZ,
     UNIQUE (repo_id, finding_id)
 );
@@ -76,4 +78,19 @@ CREATE TABLE IF NOT EXISTS wishlist (
     wish TEXT,
     created_at TIMESTAMPTZ NOT NULL DEFAULT NOW()
 );
-CREATE INDEX IF NOT EXISTS idx_wishlist_email ON wishlist(email);
+CREATE INDEX IF NOT EXISTS idx_wishlist_email ON wishlist(email);
+
+-- Trigger to automatically update the updated_at column on row modifications
+CREATE OR REPLACE FUNCTION update_updated_at_column()
+RETURNS TRIGGER AS $$
+BEGIN
+    NEW.updated_at = NOW();
+    RETURN NEW;
+END;
+$$ language 'plpgsql';
+
+CREATE TRIGGER update_scans_updated_at BEFORE UPDATE ON scans
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();
+
+CREATE TRIGGER update_findings_updated_at BEFORE UPDATE ON findings
+    FOR EACH ROW EXECUTE FUNCTION update_updated_at_column();

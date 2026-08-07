@@ -13,6 +13,11 @@ import (
 var hunkHeaderRe = regexp.MustCompile(`^@@ -\d+(?:,\d+)? \+(\d+)(?:,(\d+))? @@`)
 
 func ChangedFiles(repoRoot, baseRef string) ([]string, error) {
+	// FIX: Prevent git argument injection (e.g. baseRef = "--output=/tmp/pwned")
+	if strings.HasPrefix(baseRef, "-") {
+		return nil, fmt.Errorf("invalid baseRef: cannot start with '-'")
+	}
+
 	out, err := runGit(repoRoot, "diff", "--name-only", "--diff-filter=ACMR", baseRef+"...HEAD")
 	if err != nil {
 		return nil, err
@@ -28,6 +33,10 @@ func ChangedFiles(repoRoot, baseRef string) ([]string, error) {
 }
 
 func AddedLines(repoRoot, baseRef, file string) (map[int]bool, error) {
+	if strings.HasPrefix(baseRef, "-") {
+		return nil, fmt.Errorf("invalid baseRef: cannot start with '-'")
+	}
+
 	out, err := runGit(repoRoot, "diff", "--unified=0", baseRef+"...HEAD", "--", file)
 	if err != nil {
 		return nil, err

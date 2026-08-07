@@ -10,9 +10,20 @@ FROM python:3.12-slim AS runtime
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir --break-system-packages "semgrep>=1.70,<2"
+    && pip install --no-cache-dir --break-system-packages "semgrep==1.75.0"
+
+# Create non-root user for security
+RUN adduser --disabled-password --gecos "" --uid 1000 vyala
+
 COPY --from=build /vyala /usr/local/bin/vyala
+
+# FIX: Copy the Semgrep rules into the container so the engine can find them!
+COPY --from=build /src/internal/rules /etc/vyala/rules
+
 COPY entrypoint.sh /entrypoint.sh
 RUN chmod +x /entrypoint.sh /usr/local/bin/vyala
-# Force rebuild 2026-07-18
+
+USER vyala
+WORKDIR /github/workspace
+
 ENTRYPOINT ["/entrypoint.sh"]

@@ -49,9 +49,13 @@ func RenderComment(cbom findings.CBOM, repoSlug, headSHA, severityThreshold stri
 		fmt.Fprintln(&b, "| File | Algorithm | Suggested replacement |")
 		fmt.Fprintln(&b, "|---|---|---|")
 		for _, f := range fs {
-			link := fmt.Sprintf("https://github.com/%s/blob/%s/%s#L%d", repoSlug, headSHA, f.File, f.Line)
+			// FIX: Handle spaces in file paths for GitHub URLs
+			safeFile := strings.ReplaceAll(f.File, " ", "%20")
+			link := fmt.Sprintf("https://github.com/%s/blob/%s/%s#L%d", repoSlug, headSHA, safeFile, f.Line)
+			
+			// FIX: Escape pipes to prevent Markdown table breaking
 			fmt.Fprintf(&b, "| [`%s:%d`](%s) | %s | %s |\n",
-				f.File, f.Line, link, f.Algorithm, oneLine(f.SuggestedReplacement))
+				f.File, f.Line, link, escapeMarkdown(f.Algorithm), escapeMarkdown(oneLine(f.SuggestedReplacement)))
 		}
 		fmt.Fprintln(&b)
 	}
@@ -63,6 +67,10 @@ func RenderComment(cbom findings.CBOM, repoSlug, headSHA, severityThreshold stri
 
 	fmt.Fprintln(&b, footer(cbom))
 	return b.String()
+}
+
+func escapeMarkdown(s string) string {
+	return strings.ReplaceAll(s, "|", "\\|")
 }
 
 func footer(cbom findings.CBOM) string {
