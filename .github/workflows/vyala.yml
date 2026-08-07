@@ -15,12 +15,16 @@ jobs:
         with:
           fetch-depth: 0
 
+      # FIX: Grant write permissions so the non-root 'vyala' container 
+      # can save the cbom.json artifact to the workspace.
+      - name: Fix workspace permissions
+        run: sudo chmod -R 777 .
+
       - name: Run VYALA Scanner
-        uses: docker://ghcr.io/somegg90-blip/vyala-action:v1.2.0
+        uses: docker://ghcr.io/somegg90-blip/vyala:latest
         with:
           args: --path . --json cbom.json
       
-      # Write PR metadata to text files for the privileged comment workflow
       - name: Write PR Metadata
         run: |
           echo "${{ github.event.pull_request.number }}" > pr_number.txt
