@@ -36,7 +36,7 @@ jobs:
           echo "head_sha=$SHA" >> "$GITHUB_OUTPUT"
 
       - name: Post PR Comment
-        uses: docker://ghcr.io/somegg90-blip/vyala-action:v1.2.0
+        uses: docker://ghcr.io/somegg90-blip/vyala:latest
         with:
           args: --comment-from-file cbom.json --pr-number ${{ steps.prmeta.outputs.pr_number }} --head-sha ${{ steps.prmeta.outputs.head_sha }}
         env:
