@@ -62,9 +62,32 @@ jobs:
           severity-threshold: medium
 ```
 
+## Example output
 Findings show up as a single, auto-updating comment on the pull request.
 
 ---
+
+## ✨ See it in Action
+
+VYALA meets developers exactly where they work. When you open a PR that introduces quantum-vulnerable cryptography, VYALA automatically posts a clear, actionable report:
+
+<details>
+<summary><strong>Click to see an example PR comment</strong></summary>
+
+## 🔐 VYALA — Post-Quantum Cryptography Scan
+
+### 🔴 High (1)
+| File | Algorithm | Suggested replacement |
+|---|---|---|
+| [`auth.py:42`](#) | RSA | Replace with ML-KEM (FIPS 203) using a hybrid construction. |
+
+### 🟡 Medium (2)
+| File | Algorithm | Suggested replacement |
+|---|---|---|
+| [`infra/main.tf:12`](#) | TLS | Use TLS 1.3 with hybrid PQC key exchange. |
+| [`utils/crypto.py:8`](#) | ECC | Replace with ML-DSA (FIPS 204) for signing operations. |
+
+</details>
 
 ## Example output
 
