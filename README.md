@@ -73,6 +73,15 @@ Findings show up as a single, auto-updating comment on the pull request.
 
 VYALA meets developers exactly where they work. When you open a PR that introduces quantum-vulnerable cryptography, VYALA automatically posts a clear, actionable report:
 
+<p align="center">
+  <img src="./sample-vyala-github-PR.gif" alt="VYALA GitHub PR demo" width="900" />
+</p>
+
+<div align="center">
+  <img src="./github-PR-1.png" alt="VYALA GitHub PR screenshot 1" width="430" />
+  <img src="./github-PR-2.png" alt="VYALA GitHub PR screenshot 2" width="430" />
+</div>
+
 <details>
 <summary><strong>Click to see an example PR comment</strong></summary>
 
