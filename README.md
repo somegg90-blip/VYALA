@@ -100,6 +100,8 @@ VYALA meets developers exactly where they work. When you open a PR that introduc
 
 </details>
 
+**Interested in continuous monitoring, trend analysis, and AI-assisted remediation? Join the VYALA Cloud waitlist:** https://witty-forest-0e4506500.7.azurestaticapps.net/
+
 ## Example output
 
 ```
@@ -142,3 +144,5 @@ Enterprise PQC discovery tools take large organizations 12–24 months and $50K�
 ## Contributing
 
 Issues and pull requests welcome — see [`CONTRIBUTING.md`](CONTRIBUTING.md).
+
+**Interested in continuous monitoring, trend analysis, and AI-assisted remediation? Join the VYALA Cloud waitlist:** https://witty-forest-0e4506500.7.azurestaticapps.net/
