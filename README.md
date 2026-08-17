@@ -1,8 +1,10 @@
 <div align="center">
 
-# 🔐 VYALA
+<img src="./vyala-logo1.svg" alt="VYALA logo" width="180" />
 
-**Post-quantum cryptography vulnerability scanner for developers.**
+# VYALA
+
+**VYALA helps developers catch quantum-vulnerable cryptography before it ships by surfacing clear, actionable fixes in the pull requests they already review.**
 
 A CI-native tool that detects quantum-vulnerable crypto in your codebase and posts actionable findings directly on pull requests.
 
