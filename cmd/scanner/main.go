@@ -24,6 +24,7 @@ var relevantFilenames = map[string]bool{
 	"package.json":     true,
 	"requirements.txt": true,
 	"pyproject.toml":   true,
+	"go.mod":           true,
 }
 
 func main() {

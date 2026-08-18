@@ -8,6 +8,7 @@ import (
 	"strings"
 
 	"github.com/BurntSushi/toml"
+	"golang.org/x/mod/modfile"
 
 	"vyala/internal/db"
 	"vyala/internal/findings"
@@ -53,7 +54,7 @@ func ScanManifests(repoRoot string, targets []string) ([]findings.Finding, error
 			}
 
 			base := filepath.Base(path)
-			if base == "package.json" || strings.HasSuffix(base, "requirements.txt") || base == "pyproject.toml" {
+			if base == "package.json" || strings.HasSuffix(base, "requirements.txt") || base == "pyproject.toml" || base == "go.mod" {
 				filesToScan = append(filesToScan, path)
 			}
 			return nil
@@ -72,6 +73,9 @@ func ScanManifests(repoRoot string, targets []string) ([]findings.Finding, error
 			allFindings = append(allFindings, found...)
 		} else if base == "pyproject.toml" {
 			found := scanPyProject(file, relPath, pqcDB["pip"])
+			allFindings = append(allFindings, found...)
+		} else if base == "go.mod" {
+			found := scanGoMod(file, relPath, pqcDB["gomod"])
 			allFindings = append(allFindings, found...)
 		}
 	}
@@ -229,6 +233,45 @@ func scanPyProject(absPath, relPath string, dbMap map[string]db.PQCStatus) []fin
 				ExposureEstimate:     "Library-level usage",
 				SuggestedReplacement: status.Replacement,
 				RuleID:               "dep-pip-" + depName,
+			})
+		}
+	}
+
+	return results
+}
+
+func scanGoMod(absPath, relPath string, dbMap map[string]db.PQCStatus) []findings.Finding {
+	var results []findings.Finding
+	data, err := os.ReadFile(absPath)
+	if err != nil {
+		return nil
+	}
+
+	// Parse the go.mod file using Go's official modfile library
+	modFile, err := modfile.Parse(absPath, data, nil)
+	if err != nil {
+		return nil
+	}
+
+	lineNum := 1 // modfile doesn't give exact line numbers easily, so we approximate
+	for _, req := range modFile.Require {
+		if req.Indirect {
+			continue // Skip indirect dependencies for now to reduce noise
+		}
+
+		depName := req.Mod.Path
+		if status, ok := dbMap[depName]; ok {
+			results = append(results, findings.Finding{
+				ID:                   findings.GenerateFindingID("dep-"+depName, relPath, lineNum),
+				Type:                 "dependency",
+				File:                 relPath,
+				Line:                 lineNum,
+				Algorithm:            status.Algorithm,
+				Severity:             "high",
+				Category:             "vulnerable_dependency",
+				ExposureEstimate:     "Library-level usage",
+				SuggestedReplacement: status.Replacement,
+				RuleID:               "dep-gomod-" + depName,
 			})
 		}
 	}

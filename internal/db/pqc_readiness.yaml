@@ -17,3 +17,12 @@ pip:
     status: vulnerable
     algorithm: ECDSA
     replacement: "Use cryptography>=41.0 with OpenSSL 3.x PQC providers"
+gomod:
+  "github.com/youmark/pkcs8":
+    status: vulnerable
+    algorithm: RSA/ECDSA
+    replacement: "Ensure underlying keys are migrated to ML-KEM/ML-DSA"
+  "golang.org/x/crypto":
+    status: partially_ready
+    algorithm: RSA/ECC
+    replacement: "Ensure OpenPGP and other sub-packages are updated to latest versions for PQC readiness"
