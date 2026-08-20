@@ -1,0 +1,12 @@
+rules:
+  - id: pqc-wolfssl-ecc-keygen-c
+    languages: [c]
+    severity: WARNING
+    message: "wolfSSL classical ECC key generation detected — quantum-vulnerable."
+    metadata:
+      algorithm: ECDSA/ECDH (classical curve)
+      category: classical_ecc
+      suggested_replacement: "Use ML-DSA (Dilithium) or SLH-DSA (SPHINCS+) for signing, or hybrid ECDH+Kyber for key exchange."
+    pattern-either:
+      - pattern: wc_ecc_make_key(...)
+      - pattern: wc_ecc_make_key_ex(...)

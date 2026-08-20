@@ -1,0 +1,11 @@
+rules:
+  - id: pqc-wolfssl-rsa-keygen-c
+    languages: [c]
+    severity: WARNING
+    message: "wolfSSL RSA key generation detected — quantum-vulnerable. Migrate to ML-KEM (FIPS 203)."
+    metadata:
+      algorithm: RSA
+      category: rsa_keygen
+      suggested_replacement: "Replace with ML-KEM (e.g., CRYSTALS-Kyber) using a hybrid construction. wolfSSL has experimental liboqs/PQC integration — check wolfssl/wolfcrypt/kyber.h if available in your build."
+    pattern-either:
+      - pattern: wc_MakeRsaKey(...)

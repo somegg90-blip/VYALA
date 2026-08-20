@@ -2,16 +2,61 @@ rules:
   - id: pqc-ecc-classical-java
     languages: [java]
     severity: WARNING
-    message: "Classical ECC usage (ECDSA/ECDH) detected – not quantum-resistant unless hybrid"
+    message: "Classical ECC usage (ECDSA/ECDH) detected – not quantum-resistant unless hybrid. Migrate to ML-DSA or ML-KEM."
+    metadata:
+      category: classical_ecc
+      algorithm: ECDSA/ECDH
+      suggested_replacement: "Use ML-DSA (FIPS 204) or SLH-DSA (FIPS 205) for signing, or a hybrid ECDH+Kyber key agreement. BouncyCastle provides PQC algorithms."
     pattern-either:
+      # Fully qualified forms
       - pattern: java.security.KeyPairGenerator.getInstance("EC")
       - pattern: java.security.Signature.getInstance("SHA256withECDSA")
       - pattern: java.security.Signature.getInstance("SHA384withECDSA")
       - pattern: java.security.Signature.getInstance("SHA512withECDSA")
       - pattern: javax.crypto.KeyAgreement.getInstance("ECDH")
+      # Imported forms
+      - pattern: KeyPairGenerator.getInstance("EC")
+      - pattern: Signature.getInstance("SHA256withECDSA")
+      - pattern: Signature.getInstance("SHA384withECDSA")
+      - pattern: Signature.getInstance("SHA512withECDSA")
+      - pattern: KeyAgreement.getInstance("ECDH")
       # BouncyCastle
       - pattern: org.bouncycastle.jce.spec.ECParameterSpec
+
+  - id: pqc-ecc-classical-java-constant
+    languages: [java]
+    severity: INFO
+    message: "ECC algorithm via constant parameter detected — verify algorithm is ECDSA/ECDH."
     metadata:
-      category: classical_ecc
-      algorithm: ECDSA/ECDH
-      suggested_replacement: "Use ML-DSA (FIPS 204) or SLH-DSA (FIPS 205) for signing, or a hybrid ECDH+Kyber key agreement. BouncyCastle provides PQC algorithms."
+      category: classical_ecc_constant_propagation
+      algorithm: ECDSA/ECDH (via constant)
+      suggested_replacement: "Verify the algorithm constant contains 'EC' or 'ECDSA' or 'ECDH', then apply ML-DSA/ML-KEM migration."
+    pattern-either:
+      - pattern: KeyPairGenerator.getInstance($ALGO)
+      - pattern: java.security.KeyPairGenerator.getInstance($ALGO)
+      - pattern: Signature.getInstance($ALGO)
+      - pattern: java.security.Signature.getInstance($ALGO)
+      - pattern: KeyAgreement.getInstance($ALGO)
+      - pattern: javax.crypto.KeyAgreement.getInstance($ALGO)
+
+  - id: pqc-ecc-classical-java-unresolved
+    languages: [java]
+    severity: INFO
+    message: "Unresolved ECC algorithm argument — unable to determine if ECDSA/ECDH or post-quantum. Verify manually."
+    metadata:
+      category: unresolved_algorithm_call
+      algorithm: unknown (ECDSA/ECDH or other, depends on argument)
+      suggested_replacement: "Inspect the algorithm argument to determine if it involves classical ECC, then apply the appropriate post-quantum migration."
+    pattern-either:
+      - pattern-inside: |
+          KeyPairGenerator kpg = KeyPairGenerator.getInstance($ARG);
+        pattern: $ARG
+        metavariable-pattern:
+          metavariable: $ARG
+          pattern-not: "\"...\""
+      - pattern-inside: |
+          java.security.KeyPairGenerator kpg = java.security.KeyPairGenerator.getInstance($ARG);
+        pattern: $ARG
+        metavariable-pattern:
+          metavariable: $ARG
+          pattern-not: "\"..\""

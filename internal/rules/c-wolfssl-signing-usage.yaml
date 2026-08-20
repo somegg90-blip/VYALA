@@ -1,0 +1,36 @@
+rules:
+  - id: pqc-wolfssl-rsa-signing-usage-c
+    languages: [c]
+    severity: WARNING
+    message: "wolfSSL RSA signing detected — quantum-vulnerable."
+    metadata:
+      algorithm: RSA
+      category: rsa_signing_usage
+      suggested_replacement: "Replace RSA signing with ML-DSA (FIPS 204), or a hybrid RSA+ML-DSA scheme during transition."
+    pattern-either:
+      - pattern: wc_RsaSSL_Sign(...)
+
+  - id: pqc-wolfssl-ecdsa-signing-usage-c
+    languages: [c]
+    severity: WARNING
+    message: "wolfSSL ECDSA signing detected — quantum-vulnerable."
+    metadata:
+      algorithm: ECDSA
+      category: ecdsa_signing_usage
+      suggested_replacement: "Replace with ML-DSA (Dilithium) or SLH-DSA (SPHINCS+)."
+    pattern-either:
+      - pattern: wc_ecc_sign_hash(...)
+
+  - id: pqc-wolfssl-generic-signature-usage-c
+    languages: [c]
+    severity: INFO
+    message: "wolfSSL generic signature API used — algorithm depends on sig_type parameter, verify manually."
+    metadata:
+      algorithm: unknown (RSA or ECDSA, depends on sig_type)
+      category: unresolved_algorithm_call
+      suggested_replacement: "Check the sig_type argument to determine if this is RSA or ECDSA, then apply the appropriate ML-DSA/SLH-DSA migration path."
+    pattern-either:
+      - pattern: wc_SignatureGenerate(...)
+      - pattern: wc_SignatureGenerateHash(...)
+      - pattern: wc_SignatureGenerate_ex(...)
+      - pattern: wc_SignatureGenerateHash_ex(...)

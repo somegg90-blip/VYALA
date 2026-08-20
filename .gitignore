@@ -56,10 +56,9 @@ coverage.html
 web/
 
 raw_results/
-chart_1_top.png
-chart_2_by_langauge.png
+chart_2_by_language.png
 chart_3_severity.png
-
+chart_1_top_10.png
 generate_charts.py
 
 results.csv
