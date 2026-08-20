@@ -54,3 +54,14 @@ coverage.out
 coverage.html
 
 web/
+
+raw_results/
+chart_1_top.png
+chart_2_by_langauge.png
+chart_3_severity.png
+
+generate_charts.py
+
+results.csv
+
+vyala_hunt.py
