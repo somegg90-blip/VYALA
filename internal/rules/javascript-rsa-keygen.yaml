@@ -3,12 +3,6 @@ rules:
     languages: [javascript, typescript]
     message: "RSA key generation detected – not quantum-resistant"
     severity: WARNING
-    pattern-either:
-      - pattern: crypto.generateKeyPair('rsa', ...)
-      - pattern: crypto.generateKeyPair("rsa", ...)
-      - pattern: "subtle.generateKey({name: 'RSASSA-PKCS1-v1_5',...}, ...)"
-      - pattern: "subtle.generateKey({name: 'RSA-PSS',...}, ...)"
-      - pattern: "subtle.generateKey({name: 'RSA-OAEP',...}, ...)"
     metadata:
       category: rsa_keygen
       algorithm: RSA
@@ -19,3 +13,10 @@ rules:
         - "*.ts"
         - "*.jsx"
         - "*.tsx"
+    patterns:
+      - pattern-either:
+          - pattern: crypto.generateKeyPair('rsa', ...)
+          - pattern: crypto.generateKeyPair("rsa", ...)
+          - pattern: "subtle.generateKey({name: 'RSASSA-PKCS1-v1_5',...}, ...)"
+          - pattern: "subtle.generateKey({name: 'RSA-PSS',...}, ...)"
+          - pattern: "subtle.generateKey({name: 'RSA-OAEP',...}, ...)"

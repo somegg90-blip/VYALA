@@ -7,47 +7,15 @@ rules:
       algorithm: RSA
       category: rsa_keygen
       suggested_replacement: "Replace with ML-KEM (FIPS 203) key generation using a hybrid RSA+ML-KEM construction during transition."
-    pattern-either:
-      # Fully qualified form
-      - pattern: |
-          java.security.KeyPairGenerator.getInstance("RSA")
-      - pattern: |
-          java.security.KeyPairGenerator.getInstance("RSA", ...)
-      # Imported form
-      - pattern: |
-          KeyPairGenerator.getInstance("RSA")
-      - pattern: |
-          KeyPairGenerator.getInstance("RSA", ...)
-
-  - id: java-rsa-keygen-constant
-    languages: [java]
-    severity: INFO
-    message: "RSA Key Generation via constant propagation detected — verify algorithm is RSA-based."
-    metadata:
-      algorithm: RSA (via constant)
-      category: rsa_keygen_constant_propagation
-      suggested_replacement: "Verify that the passed constant actually contains 'RSA' or a quantum-vulnerable algorithm, then apply ML-KEM migration."
-    pattern-either:
-      # Constant propagation: static final String ALGO = "RSA"; getInstance(ALGO)
-      - pattern: |
-          KeyPairGenerator.getInstance($ALGO)
-        metavariable-pattern:
+    patterns:
+      # Find any getInstance call
+      - pattern-either:
+          - pattern: KeyPairGenerator.getInstance($ALGO)
+          - pattern: java.security.KeyPairGenerator.getInstance($ALGO)
+      # Ensure the argument is a string containing RSA
+      - metavariable-regex:
           metavariable: $ALGO
-          pattern-either:
-            - pattern: $X
-              metavariable-comparison:
-                comparison: eq
-                metavariable: $X
-      # Fully qualified + constant
-      - pattern: |
-          java.security.KeyPairGenerator.getInstance($ALGO)
-        metavariable-pattern:
-          metavariable: $ALGO
-          pattern-either:
-            - pattern: $X
-              metavariable-comparison:
-                comparison: eq
-                metavariable: $X
+          regex: ".*RSA.*"
 
   - id: java-rsa-keygen-unresolved
     languages: [java]
@@ -57,17 +25,11 @@ rules:
       algorithm: unknown (RSA or other, depends on argument)
       category: unresolved_algorithm_call
       suggested_replacement: "Inspect the algorithm argument at this call site to determine if it is RSA or another quantum-vulnerable algorithm, then apply the appropriate post-quantum migration."
-    pattern-either:
-      # Catch any getInstance call with a non-literal argument
-      - pattern-inside: |
-          KeyPairGenerator kg = KeyPairGenerator.getInstance($ARG);
-        pattern: $ARG
-        metavariable-pattern:
-          metavariable: $ARG
-          pattern-not: "\"...\""
-      - pattern-inside: |
-          java.security.KeyPairGenerator kg = java.security.KeyPairGenerator.getInstance($ARG);
-        pattern: $ARG
-        metavariable-pattern:
-          metavariable: $ARG
-          pattern-not: "\"..\""
+    patterns:
+      # Find any getInstance call
+      - pattern-either:
+          - pattern: KeyPairGenerator.getInstance($ALGO)
+          - pattern: java.security.KeyPairGenerator.getInstance($ALGO)
+      # But exclude hardcoded string literals (since we catch those above)
+      - pattern-not: KeyPairGenerator.getInstance("...")
+      - pattern-not: java.security.KeyPairGenerator.getInstance("...")

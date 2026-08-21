@@ -3,11 +3,6 @@ rules:
     languages: [javascript, typescript]
     message: "Classical ECC (ECDSA/ECDH) usage – not quantum-resistant unless part of a hybrid"
     severity: WARNING
-    pattern-either:
-      - pattern: crypto.generateKeyPair('ec', ...)
-      - pattern: crypto.generateKeyPair("ec", ...)
-      - pattern: "subtle.generateKey({name: 'ECDSA',...}, ...)"
-      - pattern: "subtle.generateKey({name: 'ECDH',...}, ...)"
     metadata:
       category: classical_ecc
       algorithm: ECDSA/ECDH (classical curve)
@@ -18,3 +13,9 @@ rules:
         - "*.ts"
         - "*.jsx"
         - "*.tsx"
+    patterns:
+      - pattern-either:
+          - pattern: crypto.generateKeyPair('ec', ...)
+          - pattern: crypto.generateKeyPair("ec", ...)
+          - pattern: "subtle.generateKey({name: 'ECDSA',...}, ...)"
+          - pattern: "subtle.generateKey({name: 'ECDH',...}, ...)"

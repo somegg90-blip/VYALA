@@ -1,0 +1,54 @@
+{
+  "version": "1.0",
+  "generated_at": "2026-08-21T05:55:04.54345603Z",
+  "findings": [
+    {
+      "finding_id": "vy-97808a081f6e119b",
+      "type": "code",
+      "file": "rsa_and_ecc.c",
+      "line": 28,
+      "algorithm": "RSA",
+      "severity": "medium",
+      "category": "rsa_keygen",
+      "hnd_exposure_estimate": "",
+      "suggested_replacement": "Replace with ML-KEM (e.g., CRYSTALS-Kyber) using a hybrid construction. wolfSSL has experimental liboqs/PQC integration — check wolfssl/wolfcrypt/kyber.h if available in your build.",
+      "rule_id": "pqc-wolfssl-rsa-keygen-c"
+    },
+    {
+      "finding_id": "vy-cfaeefe405c25a5c",
+      "type": "code",
+      "file": "rsa_and_ecc.c",
+      "line": 29,
+      "algorithm": "ECDSA/ECDH (classical curve)",
+      "severity": "medium",
+      "category": "classical_ecc",
+      "hnd_exposure_estimate": "",
+      "suggested_replacement": "Use ML-DSA (Dilithium) or SLH-DSA (SPHINCS+) for signing, or hybrid ECDH+Kyber for key exchange.",
+      "rule_id": "pqc-wolfssl-ecc-keygen-c"
+    },
+    {
+      "finding_id": "vy-da9137b5a9ef0855",
+      "type": "code",
+      "file": "rsa_and_ecc.c",
+      "line": 31,
+      "algorithm": "RSA",
+      "severity": "medium",
+      "category": "rsa_signing_usage",
+      "hnd_exposure_estimate": "",
+      "suggested_replacement": "Replace RSA signing with ML-DSA (FIPS 204), or a hybrid RSA+ML-DSA scheme during transition.",
+      "rule_id": "pqc-wolfssl-rsa-signing-usage-c"
+    },
+    {
+      "finding_id": "vy-1f66a03b2b678255",
+      "type": "code",
+      "file": "rsa_and_ecc.c",
+      "line": 32,
+      "algorithm": "ECDSA",
+      "severity": "medium",
+      "category": "ecdsa_signing_usage",
+      "hnd_exposure_estimate": "",
+      "suggested_replacement": "Replace with ML-DSA (Dilithium) or SLH-DSA (SPHINCS+).",
+      "rule_id": "pqc-wolfssl-ecdsa-signing-usage-c"
+    }
+  ]
+}

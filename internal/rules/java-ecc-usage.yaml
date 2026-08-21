@@ -48,15 +48,13 @@ rules:
       algorithm: unknown (ECDSA/ECDH or other, depends on argument)
       suggested_replacement: "Inspect the algorithm argument to determine if it involves classical ECC, then apply the appropriate post-quantum migration."
     pattern-either:
-      - pattern-inside: |
-          KeyPairGenerator kpg = KeyPairGenerator.getInstance($ARG);
-        pattern: $ARG
-        metavariable-pattern:
-          metavariable: $ARG
-          pattern-not: "\"...\""
-      - pattern-inside: |
-          java.security.KeyPairGenerator kpg = java.security.KeyPairGenerator.getInstance($ARG);
-        pattern: $ARG
-        metavariable-pattern:
-          metavariable: $ARG
-          pattern-not: "\"..\""
+      - patterns:
+          - pattern-inside: |
+              KeyPairGenerator kpg = KeyPairGenerator.getInstance($ARG);
+          - pattern: $ARG
+          - pattern-not: '"..."'
+      - patterns:
+          - pattern-inside: |
+              java.security.KeyPairGenerator kpg = java.security.KeyPairGenerator.getInstance($ARG);
+          - pattern: $ARG
+          - pattern-not: '"..."'
