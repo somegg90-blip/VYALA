@@ -64,3 +64,6 @@ venv/
 results.csv
 final-cbom.json
 test-cbom.json
+
+# ---------- Local AI remediation telemetry (fine-tune dataset) ----------
+.vyala/
