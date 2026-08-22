@@ -27,13 +27,17 @@ type CompletionRequest struct {
 type OllamaClient struct {
 	BaseURL string
 	Model   string
-	HTTP    *http.Client
+	// NumCtx is the requested context window. Keep modest on consumer GPUs:
+	// KV-cache for large contexts can push a 5GB model past a 6GB card.
+	NumCtx int
+	HTTP   *http.Client
 }
 
 func NewOllamaClient(baseURL, model string) *OllamaClient {
 	return &OllamaClient{
 		BaseURL: strings.TrimRight(baseURL, "/"),
 		Model:   model,
+		NumCtx:  4096,
 		HTTP:    &http.Client{Timeout: 5 * time.Minute},
 	}
 }
@@ -67,7 +71,8 @@ func (c *OllamaClient) Complete(ctx context.Context, req CompletionRequest) (str
 		Format: "json",
 		Options: map[string]any{
 			"temperature": req.Temperature,
-			"num_ctx":     8192,
+			"num_ctx":     c.NumCtx,
+			"num_gpu":     99, // offload everything; llama.cpp falls back per-layer if VRAM runs out
 		},
 	}
 
