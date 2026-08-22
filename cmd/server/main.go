@@ -1,6 +1,7 @@
 package main
 
 import (
+    "bytes"
     "context"
     "crypto/rand"
     "encoding/hex"
@@ -121,15 +122,21 @@ func main() {
         // Use a client with timeouts
         client := &http.Client{Timeout: 10 * time.Second}
 
-        // Exchange code for access token
-        tokenReq, _ := http.NewRequest("POST", "https://github.com/login/oauth/access_token", nil)
-        q := tokenReq.URL.Query()
-        q.Add("client_id", githubClientID)
-        q.Add("client_secret", githubClientSecret)
-        q.Add("code", code)
-        q.Add("redirect_uri", oauthRedirectURL)
-        tokenReq.URL.RawQuery = q.Encode()
+        // Exchange code for access token. Send credentials in the POST body
+        // (never the query string, which leaks into proxies and access logs).
+        tokenPayload, _ := json.Marshal(map[string]string{
+            "client_id":     githubClientID,
+            "client_secret": githubClientSecret,
+            "code":          code,
+            "redirect_uri":  oauthRedirectURL,
+        })
+        tokenReq, err := http.NewRequest("POST", "https://github.com/login/oauth/access_token", bytes.NewReader(tokenPayload))
+        if err != nil {
+            http.Error(w, "Failed to build token request", http.StatusInternalServerError)
+            return
+        }
         tokenReq.Header.Set("Accept", "application/json")
+        tokenReq.Header.Set("Content-Type", "application/json")
 
         resp, err := client.Do(tokenReq)
         if err != nil {

@@ -1,0 +1,28 @@
+rules:
+  - id: pqc-rsa-encryption-rust
+    languages: [rust]
+    severity: WARNING
+    message: "RSA encryption detected – not quantum-resistant (harvest-now-decrypt-later risk)"
+    pattern-either:
+      - pattern: Oaep::new(...)
+      - pattern: rsa::Oaep::new(...)
+      - pattern: Pkcs1v15Encrypt
+      - pattern: rsa::Pkcs1v15Encrypt
+    metadata:
+      category: rsa_encryption
+      algorithm: RSA-OAEP / RSA-PKCS1v1.5
+      suggested_replacement: "Replace RSA encryption with ML-KEM (FIPS 203) via the ml-kem or oqs crates; keep AES-GCM for bulk data."
+
+  - id: pqc-dh-dsa-rust
+    languages: [rust]
+    severity: WARNING
+    message: "Classical DH or DSA usage detected – not quantum-resistant"
+    pattern-either:
+      - pattern: Dh::generate_params(...)
+      - pattern: openssl::dh::Dh::generate_params(...)
+      - pattern: Dsa::generate(...)
+      - pattern: openssl::dsa::Dsa::generate(...)
+    metadata:
+      category: dh_keyexchange
+      algorithm: DH / DSA
+      suggested_replacement: "Classical DH/DSA are broken by Shor's algorithm. Use ML-KEM (FIPS 203) / ML-DSA (FIPS 204) equivalents."

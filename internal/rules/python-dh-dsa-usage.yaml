@@ -1,0 +1,28 @@
+rules:
+  - id: pqc-dh-keyexchange-python
+    languages: [python]
+    severity: WARNING
+    message: "Diffie-Hellman key exchange detected – not quantum-resistant"
+    pattern-either:
+      - pattern: cryptography.hazmat.primitives.asymmetric.dh.generate_parameters(...)
+      - pattern: cryptography.hazmat.primitives.asymmetric.dh.DHParameterNumbers(...)
+      - pattern: dh.generate_parameters(...)
+      - pattern: pyDH.DiffieHellman(...)
+      - pattern: pyDH.DiffieHellmanGroup(...)
+    metadata:
+      category: dh_keyexchange
+      algorithm: Diffie-Hellman (FFDH)
+      suggested_replacement: "Classical DH key agreement is broken by Shor's algorithm. Replace with ML-KEM (FIPS 203) hybrid KEM, e.g. liboqs-python."
+
+  - id: pqc-dsa-signing-python
+    languages: [python]
+    severity: WARNING
+    message: "DSA key generation/signing detected – not quantum-resistant"
+    pattern-either:
+      - pattern: cryptography.hazmat.primitives.asymmetric.dsa.generate_private_key(...)
+      - pattern: dsa.generate_private_key(...)
+      - pattern: Crypto.PublicKey.DSA.generate(...)
+    metadata:
+      category: dsa_signing
+      algorithm: DSA
+      suggested_replacement: "Replace DSA signatures with ML-DSA (FIPS 204) or SLH-DSA (FIPS 205)."

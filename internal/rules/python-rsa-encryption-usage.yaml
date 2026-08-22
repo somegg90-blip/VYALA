@@ -1,0 +1,15 @@
+rules:
+  - id: pqc-rsa-encryption-oaep-python
+    languages: [python]
+    severity: WARNING
+    message: "RSA encryption (OAEP padding) detected – vulnerable to harvest-now-decrypt-later attacks"
+    pattern-either:
+      - pattern: $PUB.encrypt($DATA, padding.OAEP(...))
+      - pattern: $PUB.encrypt($DATA, padding=padding.OAEP(...))
+      - pattern: cryptography.hazmat.primitives.asymmetric.padding.OAEP(...)
+      - pattern: PKCS1_OAEP.new(...)
+      - pattern: Crypto.Cipher.PKCS1_OAEP.new(...)
+    metadata:
+      category: rsa_encryption
+      algorithm: RSA-OAEP
+      suggested_replacement: "RSA encryption is broken by Shor's algorithm and captured ciphertexts can be decrypted later (HNDL). Replace with ML-KEM (FIPS 203) hybrid encapsulation."

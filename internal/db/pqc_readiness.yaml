@@ -8,6 +8,43 @@ npm:
     status: vulnerable
     algorithm: RSA
     replacement: "Use WebCrypto API with PQC algorithms"
+  "node-rsa":
+    status: vulnerable
+    algorithm: RSA
+    replacement: "Use WebCrypto API with ML-KEM hybrid once available; for signing use ML-DSA via a PQC library"
+  "node-jose":
+    status: vulnerable
+    algorithm: RSA/ECC
+    replacement: "Migrate JOSE flows to ML-DSA (FIPS 204) based tokens when your identity provider supports them"
+  "openpgp":
+    status: vulnerable
+    algorithm: RSA/ECDSA/EdDSA
+    replacement: "Track OpenPGP PQC (ML-KEM+X25519, ML-DSA+Ed25519) draft adoption; plan key migration"
+  "sjcl":
+    status: vulnerable
+    algorithm: ECC
+    replacement: "Replace ECC usage with ML-KEM/ML-DSA implementations such as @noble/post-quantum"
+  "elliptic":
+    status: vulnerable
+    algorithm: ECDSA/ECDH
+    replacement: "Migrate to hybrid or pure PQC schemes (@noble/post-quantum); classical curves are broken by Shor's algorithm"
+  "tweetnacl":
+    status: vulnerable
+    algorithm: Ed25519/X25519 (ECC)
+    replacement: "Plan migration to ML-KEM (FIPS 203) and ML-DSA (FIPS 204) equivalents"
+  "ursa":
+    status: vulnerable
+    algorithm: RSA
+    replacement: "Remove direct RSA usage; adopt PQC KEM/signature libraries"
+  "ursa-optional":
+    status: vulnerable
+    algorithm: RSA
+    replacement: "Remove direct RSA usage; adopt PQC KEM/signature libraries"
+  "cryptico":
+    status: vulnerable
+    algorithm: RSA
+    replacement: "Unmaintained RSA library — replace with WebCrypto + PQC hybrid constructions"
+
 pip:
   "pycryptodome":
     status: vulnerable
@@ -17,6 +54,31 @@ pip:
     status: vulnerable
     algorithm: ECDSA
     replacement: "Use cryptography>=41.0 with OpenSSL 3.x PQC providers"
+  "pyjwt":
+    status: vulnerable
+    algorithm: RSA/ECDSA (signing modes)
+    replacement: "Move token signing to ML-DSA (FIPS 204) once your identity provider supports PQC JWTs"
+  "pycrypto":
+    status: vulnerable
+    algorithm: RSA/DSA/ElGamal
+    replacement: "Abandoned library — migrate to cryptography with OpenSSL 3.x PQC providers"
+  "python-jose":
+    status: vulnerable
+    algorithm: RSA/ECDSA
+    replacement: "Migrate JOSE flows to ML-DSA-based tokens when supported by your IdP"
+  "rsa":
+    status: vulnerable
+    algorithm: RSA
+    replacement: "Replace with ML-KEM/ML-DSA via liboqs-python during transition"
+  "m2crypto":
+    status: vulnerable
+    algorithm: RSA/ECC
+    replacement: "Migrate to cryptography with OpenSSL 3.x PQC providers"
+  "cryptography":
+    status: partially_ready
+    algorithm: RSA/ECC (classical primitives)
+    replacement: "Keep updated >=45.0 and enable OpenSSL 3.5 hybrid X25519MLKEM768 KEX; migrate RSA/ECS usages inside this repo to ML-KEM/ML-DSA APIs"
+
 gomod:
   "github.com/youmark/pkcs8":
     status: vulnerable
@@ -26,3 +88,23 @@ gomod:
     status: partially_ready
     algorithm: RSA/ECC
     replacement: "Ensure OpenPGP and other sub-packages are updated to latest versions for PQC readiness"
+  "github.com/dgrijalva/jwt-go":
+    status: vulnerable
+    algorithm: RSA/ECDSA (JWT signing)
+    replacement: "Abandoned — move to a maintained JWT library and plan ML-DSA-signed tokens"
+  "github.com/golang-jwt/jwt/v4":
+    status: vulnerable
+    algorithm: RSA/ECDSA (JWT signing)
+    replacement: "Upgrade to latest and plan ML-DSA-signed tokens when your infrastructure supports PQC"
+  "github.com/square/go-jose":
+    status: vulnerable
+    algorithm: RSA/ECDH (JWE/JWS)
+    replacement: "Migrate JWE key management to ML-KEM hybrids when supported by peers"
+  "github.com/lestrrat-go/jwx/v2":
+    status: vulnerable
+    algorithm: RSA/ECDSA (JWT/JOSE)
+    replacement: "Track jwx PQC support; plan ML-DSA-signed tokens"
+  "github.com/cloudflare/circl":
+    status: partially_ready
+    algorithm: Classical + PQC (Kyber/Dilithium included)
+    replacement: "Already ships ML-KEM/ML-DSA — ensure you use its lattice packages rather than its classical ones"

@@ -12,6 +12,7 @@ import (
 	"time"
 
 	"vyala/internal/findings"
+	"vyala/internal/rules"
 )
 
 type SemgrepOutput struct {
@@ -40,10 +41,10 @@ type SemgrepResult struct {
 // It returns the ABSOLUTE path to prevent any working-directory ambiguity.
 func findRulesDir() string {
 	candidates := []string{
-		"/etc/vyala/rules",        // 1. Production Docker container
-		"internal/rules",         // 2. Running locally from the repo root
-		"../rules",               // 3. Running tests from internal/engine/
-		"../../internal/rules",   // 4. Running tests from deeper directories
+		"/etc/vyala/rules",      // 1. Production Docker container
+		"internal/rules",        // 2. Running locally from the repo root
+		"../rules",              // 3. Running tests from internal/engine/
+		"../../internal/rules",  // 4. Running tests from deeper directories
 	}
 	for _, dir := range candidates {
 		if info, err := os.Stat(dir); err == nil && info.IsDir() {
@@ -54,9 +55,13 @@ func findRulesDir() string {
 			return dir
 		}
 	}
-	// Fallback
-	absPath, _ := filepath.Abs("internal/rules")
-	return absPath
+	// Fallback: extract the rules embedded in the binary (go:embed) to a
+	// temp dir so the scanner works from any working directory or install.
+	dir, err := rules.ExtractToTemp()
+	if err != nil {
+		return ""
+	}
+	return dir
 }
 
 func Scan(repoRoot string, targets []string) (findings.CBOM, error) {
@@ -64,6 +69,9 @@ func Scan(repoRoot string, targets []string) (findings.CBOM, error) {
 	defer cancel()
 
 	rulesPath := findRulesDir()
+	if rulesPath == "" {
+		return findings.CBOM{}, fmt.Errorf("semgrep rules not found: no on-disk rules directory and embedded rule extraction failed")
+	}
 	
 	args := []string{
 		"--json",

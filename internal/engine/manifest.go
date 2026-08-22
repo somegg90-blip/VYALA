@@ -45,10 +45,12 @@ func ScanManifests(repoRoot string, targets []string) ([]findings.Finding, error
 				return nil
 			}
 
-			// Skip ignored directories entirely
+			// Skip ignored directories entirely. NOTE: do NOT skip dirs merely
+			// named "internal" — that is a common Go project convention and
+			// user manifests there are real findings.
 			if info.IsDir() {
 				dirName := filepath.Base(path)
-				if dirName == "testdata" || dirName == "internal" || dirName == "node_modules" || dirName == "vendor" || dirName == ".git" {
+				if dirName == "testdata" || dirName == "node_modules" || dirName == "vendor" || dirName == ".git" {
 					return filepath.SkipDir
 				}
 			}
@@ -103,7 +105,7 @@ func scanNPM(absPath, relPath string, dbMap map[string]db.PQCStatus) []findings.
 		for depName := range deps {
 			if status, ok := dbMap[depName]; ok {
 				results = append(results, findings.Finding{
-					ID:                   findings.GenerateFindingID("dep-"+depName, relPath, lineNum),
+					ID:                   findings.GenerateDependencyFindingID("dep-npm-"+depName, relPath, depName),
 					Type:                 "dependency",
 					File:                 relPath,
 					Line:                 lineNum,
@@ -154,9 +156,12 @@ func scanPIP(absPath, relPath string, dbMap map[string]db.PQCStatus) []findings.
 			continue // guards against a malformed/blank line after stripping
 		}
 
-		if status, ok := dbMap[depName[0]]; ok {
+		// Normalize like pip does: case-insensitive, "_" and "-" interchangeable.
+		pkgName := strings.ToLower(strings.ReplaceAll(depName[0], "_", "-"))
+
+		if status, ok := dbMap[pkgName]; ok {
 			results = append(results, findings.Finding{
-				ID:                   findings.GenerateFindingID("dep-"+depName[0], relPath, i+1),
+				ID:                   findings.GenerateDependencyFindingID("dep-pip-"+pkgName, relPath, pkgName),
 				Type:                 "dependency",
 				File:                 relPath,
 				Line:                 i + 1,
@@ -165,7 +170,7 @@ func scanPIP(absPath, relPath string, dbMap map[string]db.PQCStatus) []findings.
 				Category:             "vulnerable_dependency",
 				ExposureEstimate:     "Library-level usage",
 				SuggestedReplacement: status.Replacement,
-				RuleID:               "dep-pip-" + depName[0],
+				RuleID:               "dep-pip-" + pkgName,
 			})
 		}
 	}
@@ -184,18 +189,39 @@ func scanPyProject(absPath, relPath string, dbMap map[string]db.PQCStatus) []fin
 		return nil
 	}
 
-	lineNum := 1 // TOML parsing doesn't give us easy line numbers, so we approximate
+	// Recover exact line numbers for Poetry dependency table entries so PR
+	// comment links point at the right line. TOML decoding doesn't expose
+	// positions here, so scan the raw text of the [tool.poetry.dependencies]
+	// section.
+	lineByDep := map[string]int{}
+	inSection := false
+	for i, raw := range strings.Split(string(data), "\n") {
+		t := strings.TrimSpace(raw)
+		if strings.HasPrefix(t, "[") {
+			inSection = t == "[tool.poetry.dependencies]"
+			continue
+		}
+		if !inSection || t == "" || strings.HasPrefix(t, "#") {
+			continue
+		}
+		if idx := strings.Index(t, "="); idx > 0 {
+			name := strings.ToLower(strings.ReplaceAll(strings.Trim(strings.TrimSpace(t[:idx]), "\"'"), "_", "-"))
+			if _, exists := lineByDep[name]; !exists {
+				lineByDep[name] = i + 1
+			}
+		}
+	}
 
 	// Check Poetry dependencies
 	for depName := range proj.Tool.Poetry.Dependencies {
-		depName = strings.ToLower(depName)
+		depName = strings.ToLower(strings.ReplaceAll(depName, "_", "-"))
 		if status, ok := dbMap[depName]; ok {
 			results = append(results, findings.Finding{
-				ID:                   findings.GenerateFindingID("dep-"+depName, relPath, lineNum),
-				Type:                 "dependency",
-				File:                 relPath,
-				Line:                 lineNum,
-				Algorithm:            status.Algorithm,
+				ID:       findings.GenerateDependencyFindingID("dep-pip-"+depName, relPath, depName),
+				Type:     "dependency",
+				File:     relPath,
+				Line:     firstNonZero(lineByDep[depName], 1),
+				Algorithm: status.Algorithm,
 				Severity:             "high",
 				Category:             "vulnerable_dependency",
 				ExposureEstimate:     "Library-level usage",
@@ -219,14 +245,15 @@ func scanPyProject(absPath, relPath string, dbMap map[string]db.PQCStatus) []fin
 		if len(parts) == 0 {
 			continue
 		}
-		depName := strings.ToLower(parts[0])
+		// Normalize like pip does: case-insensitive, "_" and "-" interchangeable.
+		depName := strings.ToLower(strings.ReplaceAll(parts[0], "_", "-"))
 
 		if status, ok := dbMap[depName]; ok {
 			results = append(results, findings.Finding{
-				ID:                   findings.GenerateFindingID("dep-"+depName, relPath, lineNum),
+				ID:                   findings.GenerateDependencyFindingID("dep-pip-"+depName, relPath, depName),
 				Type:                 "dependency",
 				File:                 relPath,
-				Line:                 lineNum,
+				Line:                 1, // array elements carry no TOML position
 				Algorithm:            status.Algorithm,
 				Severity:             "high",
 				Category:             "vulnerable_dependency",
@@ -238,6 +265,13 @@ func scanPyProject(absPath, relPath string, dbMap map[string]db.PQCStatus) []fin
 	}
 
 	return results
+}
+
+func firstNonZero(a, b int) int {
+	if a != 0 {
+		return a
+	}
+	return b
 }
 
 func scanGoMod(absPath, relPath string, dbMap map[string]db.PQCStatus) []findings.Finding {
@@ -253,19 +287,22 @@ func scanGoMod(absPath, relPath string, dbMap map[string]db.PQCStatus) []finding
 		return nil
 	}
 
-	lineNum := 1 // modfile doesn't give exact line numbers easily, so we approximate
 	for _, req := range modFile.Require {
 		if req.Indirect {
 			continue // Skip indirect dependencies for now to reduce noise
 		}
 
 		depName := req.Mod.Path
+		line := 1
+		if req.Syntax != nil && req.Syntax.Start.Line > 0 {
+			line = req.Syntax.Start.Line
+		}
 		if status, ok := dbMap[depName]; ok {
 			results = append(results, findings.Finding{
-				ID:                   findings.GenerateFindingID("dep-"+depName, relPath, lineNum),
+				ID:                   findings.GenerateDependencyFindingID("dep-gomod-"+depName, relPath, depName),
 				Type:                 "dependency",
 				File:                 relPath,
-				Line:                 lineNum,
+				Line:                 line,
 				Algorithm:            status.Algorithm,
 				Severity:             "high",
 				Category:             "vulnerable_dependency",

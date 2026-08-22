@@ -1,0 +1,24 @@
+rules:
+  - id: pqc-dh-keyexchange-javascript
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: "Diffie-Hellman key exchange detected – not quantum-resistant"
+    pattern-either:
+      - pattern: crypto.createDiffieHellman(...)
+      - pattern: crypto.diffieHellman(...)
+      - pattern: crypto.generateKeyPairSync("dh", ...)
+      - pattern: crypto.generateKeyPair("dh", ...)
+    metadata:
+      category: dh_keyexchange
+      algorithm: Diffie-Hellman (FFDH)
+      suggested_replacement: "Replace classical DH with ML-KEM (FIPS 203) hybrid key encapsulation."
+
+  - id: pqc-rsa-oaep-webcrypto-js
+    languages: [javascript, typescript]
+    severity: WARNING
+    message: "RSA-OAEP encryption detected – vulnerable to harvest-now-decrypt-later attacks"
+    pattern-regex: "[\"'`]RSA-OAEP[\"'`]"
+    metadata:
+      category: rsa_encryption
+      algorithm: RSA-OAEP (WebCrypto)
+      suggested_replacement: "RSA-OAEP ciphertexts can be decrypted once quantum computers arrive. Replace with ML-KEM (FIPS 203) hybrid encapsulation."

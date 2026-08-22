@@ -1,0 +1,29 @@
+rules:
+  - id: pqc-dh-dsa-c
+    languages: [c, cpp]
+    severity: WARNING
+    message: "Classical Diffie-Hellman or DSA usage detected – not quantum-resistant"
+    pattern-either:
+      - pattern: DH_new(...)
+      - pattern: DH_generate_parameters(...)
+      - pattern: DH_generate_key(...)
+      - pattern: DSA_new(...)
+      - pattern: DSA_generate_parameters(...)
+      - pattern: DSA_generate_key(...)
+      - pattern: EVP_PKEY_CTX_set_dh_paramgen_prime_len(...)
+    metadata:
+      category: dh_keyexchange
+      algorithm: DH / DSA (OpenSSL)
+      suggested_replacement: "Classical DH/DSA are broken by Shor's algorithm. Use ML-KEM (FIPS 203) / ML-DSA (FIPS 204) via OpenSSL 3.5+ providers."
+
+  - id: pqc-rsa-encryption-c
+    languages: [c, cpp]
+    severity: WARNING
+    message: "Raw RSA encryption detected – vulnerable to harvest-now-decrypt-later attacks"
+    pattern-either:
+      - pattern: RSA_public_encrypt(...)
+      - pattern: RSA_private_decrypt(...)
+    metadata:
+      category: rsa_encryption
+      algorithm: RSA-PKCS1v1.5 / RSA-OAEP
+      suggested_replacement: "Raw RSA encryption is broken by Shor's algorithm. Replace with ML-KEM (FIPS 203) hybrid encapsulation via OpenSSL 3.5+."

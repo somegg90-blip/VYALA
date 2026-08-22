@@ -10,7 +10,7 @@ FROM python:3.12-slim AS runtime
 RUN apt-get update \
     && apt-get install -y --no-install-recommends git ca-certificates \
     && rm -rf /var/lib/apt/lists/* \
-    && pip install --no-cache-dir --break-system-packages "semgrep==1.75.0"
+    && pip install --no-cache-dir --break-system-packages "semgrep==1.174.0"
 
 # Create non-root user for security
 RUN adduser --disabled-password --gecos "" --uid 1000 vyala

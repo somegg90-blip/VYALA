@@ -1,0 +1,25 @@
+rules:
+  - id: pqc-rsa-encryption-go
+    languages: [go]
+    severity: WARNING
+    message: "RSA encryption detected – not quantum-resistant (harvest-now-decrypt-later risk)"
+    pattern-either:
+      - pattern: rsa.EncryptOAEP(...)
+      - pattern: rsa.EncryptPKCS1v15(...)
+    metadata:
+      category: rsa_encryption
+      algorithm: RSA-OAEP / RSA-PKCS1v1.5
+      suggested_replacement: "Replace RSA encryption with ML-KEM (FIPS 203) hybrid encapsulation; keep AES-GCM for bulk data."
+
+  - id: pqc-dsa-go
+    languages: [go]
+    severity: WARNING
+    message: "DSA usage detected – not quantum-resistant"
+    pattern-either:
+      - pattern: dsa.GenerateParameters(...)
+      - pattern: dsa.GenerateKey(...)
+      - pattern: dsa.Sign(...)
+    metadata:
+      category: dsa_signing
+      algorithm: DSA
+      suggested_replacement: "crypto/dsa is deprecated and quantum-vulnerable. Replace with ML-DSA (FIPS 204)."

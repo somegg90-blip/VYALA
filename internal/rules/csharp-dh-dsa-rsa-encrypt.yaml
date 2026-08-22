@@ -1,0 +1,29 @@
+rules:
+  - id: pqc-dh-dsa-csharp
+    languages: [csharp]
+    severity: WARNING
+    message: "Classical DH or DSA usage detected – not quantum-resistant"
+    pattern-either:
+      - pattern: DSA.Create(...)
+      - pattern: DSACng.$CTOR(...)
+      - pattern: ECDiffieHellman.Create(...)
+      - pattern: ECDiffieHellmanCng.$CTOR(...)
+      - pattern: System.Security.Cryptography.ECDiffieHellman.Create(...)
+    metadata:
+      category: dh_keyexchange
+      algorithm: DSA / ECDH
+      suggested_replacement: "Classical DH/DSA/ECDH are broken by Shor's algorithm. Use ML-KEM (FIPS 203) for key agreement and ML-DSA (FIPS 204) for signatures."
+
+  - id: pqc-rsa-encryption-csharp
+    languages: [csharp]
+    severity: WARNING
+    message: "RSA encryption detected – vulnerable to harvest-now-decrypt-later attacks"
+    pattern-either:
+      - pattern: RSACryptoServiceProvider.Encrypt($DATA, $PAD)
+      - pattern: RSACng.Encrypt($DATA, $PAD)
+      - pattern: RSA.Encrypt($DATA, $PAD)
+      - pattern: RSAOAEPKeyExchangeFormation.$CTOR(...)
+    metadata:
+      category: rsa_encryption
+      algorithm: RSA-OAEP / RSA-PKCS1v1.5
+      suggested_replacement: "RSA ciphertexts can be decrypted once quantum computers arrive. Replace with ML-KEM (FIPS 203) hybrid encapsulation."

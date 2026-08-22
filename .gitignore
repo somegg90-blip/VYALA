@@ -1,4 +1,5 @@
 vyala
+vyala-server
 .env
 # ---------- Go ----------
 # Compiled binaries
@@ -53,10 +54,13 @@ dump.sql
 coverage.out
 coverage.html
 
+# ---------- Frontend (private until launch) ----------
 web/
 
-generate_charts.py
+# ---------- Python venv ----------
+venv/
 
+# ---------- Stray scan artifacts ----------
 results.csv
-
-vyala_hunt.py
+final-cbom.json
+test-cbom.json

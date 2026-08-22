@@ -18,6 +18,12 @@ import (
 
 var relevantExtensions = map[string]bool{
 	".py": true, ".js": true, ".jsx": true, ".ts": true, ".tsx": true,
+	".go": true, ".java": true,
+	".c": true, ".cc": true, ".cpp": true, ".cxx": true,
+	".h": true, ".hpp": true, ".hh": true,
+	".cs": true, ".rs": true,
+	// Infrastructure-as-Code surfaces
+	".tf": true, ".yaml": true, ".yml": true,
 }
 
 var relevantFilenames = map[string]bool{

@@ -3,7 +3,7 @@
   "generated_at": "2026-07-20T17:56:08.640133606Z",
   "findings": [
     {
-      "finding_id": "vy-10e7cce4f643948f",
+      "finding_id": "vy-dep-2d49012528b921de",
       "type": "dependency",
       "file": "package.json",
       "line": 1,
@@ -15,7 +15,7 @@
       "rule_id": "dep-npm-node-forge"
     },
     {
-      "finding_id": "vy-acb4b745898ac6ef",
+      "finding_id": "vy-dep-ea4ebce84baca5e4",
       "type": "dependency",
       "file": "package.json",
       "line": 1,
@@ -27,7 +27,7 @@
       "rule_id": "dep-npm-jsencrypt"
     },
     {
-      "finding_id": "vy-37b81a9d3a8305a4",
+      "finding_id": "vy-dep-803dc282593f3aeb",
       "type": "dependency",
       "file": "requirements.txt",
       "line": 2,
@@ -39,7 +39,7 @@
       "rule_id": "dep-pip-pycryptodome"
     },
     {
-      "finding_id": "vy-6b9618564f5d8533",
+      "finding_id": "vy-dep-a6f23823b871b201",
       "type": "dependency",
       "file": "requirements.txt",
       "line": 3,
