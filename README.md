@@ -45,6 +45,12 @@ go build -o vyala ./cmd/scanner
 
 Add `--json report.json` to also write a full CBOM report.
 
+Add `--cyclonedx report.cdx.json` to emit a **CycloneDX 1.6** Cryptographic Bill of Materials — schema-validated and interoperable with Dependency-Track, Trivy, IBM CBOMkit, and any spec-compliant GRC tooling:
+
+```bash
+./vyala --path /your/repo --cyclonedx report.cdx.json
+```
+
 ### GitHub Action
 
 ```yaml

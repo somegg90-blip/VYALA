@@ -9,6 +9,7 @@ import (
 	"strings"
 	"time"
 
+	"vyala/internal/cyclonedx"
 	"vyala/internal/diffscan"
 	"vyala/internal/engine"
 	"vyala/internal/findings"
@@ -36,6 +37,7 @@ var relevantFilenames = map[string]bool{
 func main() {
 	path := flag.String("path", ".", "repo path to scan")
 	jsonOut := flag.String("json", "", "write CBOM JSON to this path (optional)")
+	cdxOut := flag.String("cyclonedx", "", "write CycloneDX 1.6 CBOM to this path (interoperable with SBOM/GRC tooling)")
 	diffBase := flag.String("diff-base", "", "if set, scan only files changed vs this git ref/SHA")
 	severityThreshold := flag.String("severity-threshold", "medium", "minimum severity to show in detail in PR comment")
 	failOn := flag.String("fail-on", "", "exit non-zero if any finding at or above this severity")
@@ -98,6 +100,15 @@ func main() {
 		if err := findings.WriteJSON(cbom, *jsonOut); err != nil {
 			fatal("writing JSON: %v", err)
 		}
+	}
+
+	if *cdxOut != "" {
+		projectName := filepath.Base(repoRoot)
+		cdx := cyclonedx.Convert(cbom, projectName)
+		if err := cyclonedx.Write(cdx, *cdxOut); err != nil {
+			fatal("writing CycloneDX CBOM: %v", err)
+		}
+		fmt.Printf("CycloneDX %s CBOM written to %s (%d components)\n", cyclonedx.SpecVersion, *cdxOut, len(cdx.Components))
 	}
 
 	if *uploadURL != "" {
