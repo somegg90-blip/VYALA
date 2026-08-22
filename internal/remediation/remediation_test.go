@@ -140,6 +140,29 @@ func TestPipelineCapturesModelErrorInRecord(t *testing.T) {
 	}
 }
 
+func TestPipelineDegradesWithoutCodeContext(t *testing.T) {
+	root, f := fixture(t)
+	f.File = "somewhere/else/requirements.txt" // file does not exist under root
+	pipe := &Pipeline{Model: mockModel{}}
+
+	rec, err := pipe.Run(context.Background(), root, f)
+	if err != nil {
+		t.Fatalf("pipeline should degrade gracefully, got error: %v", err)
+	}
+	if rec.Context != nil {
+		t.Errorf("expected nil context in degraded mode, got %+v", rec.Context)
+	}
+	if rec.Triage != nil {
+		t.Errorf("triage must be skipped without context, got %+v", rec.Triage)
+	}
+	if rec.Plan == nil || len(rec.Plan.Steps) == 0 {
+		t.Fatalf("degraded plan missing: %+v", rec.Plan)
+	}
+	if rec.Error != "" {
+		t.Errorf("degraded mode must not record an error, got %q", rec.Error)
+	}
+}
+
 func TestExtractJSONStringFences(t *testing.T) {
 	in := "Sure! Here is the plan:\n```json\n{\"a\": 1}\n```\nHope that helps."
 	if got := ExtractJSONString(in); got != `{"a": 1}` {

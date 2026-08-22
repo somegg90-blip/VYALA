@@ -36,7 +36,6 @@ Respond ONLY with JSON matching exactly this schema (no prose):
 
 	user := fmt.Sprintf("Finding:\n%s\n\nCode context (%s lines %d-%d):\n%s",
 		mustJSON(f), c.File, c.StartLine, c.EndLine, c.Snippet)
-
 	raw, err := m.Complete(ctx, CompletionRequest{System: system, User: user, Temperature: 0.1})
 	if err != nil {
 		return nil, fmt.Errorf("triage: %w", err)
@@ -95,10 +94,21 @@ AUTHORITATIVE GUIDANCE:
 Respond ONLY with JSON matching exactly this schema (no prose):
 ` + planSchema
 
-	user := fmt.Sprintf("Finding:\n%s\n\nTriage assessment:\n%s\n\nCode context (%s lines %d-%d):\n%s",
-		mustJSON(f), mustJSON(t), c.File, c.StartLine, c.EndLine, c.Snippet)
+	var sb strings.Builder
+	sb.WriteString("Finding:\n")
+	sb.WriteString(mustJSON(f))
+	if t != nil {
+		sb.WriteString("\n\nTriage assessment:\n")
+		sb.WriteString(mustJSON(t))
+	}
+	if c != nil {
+		fmt.Fprintf(&sb, "\n\nCode context (%s lines %d-%d):\n%s", c.File, c.StartLine, c.EndLine, c.Snippet)
+	} else {
+		sb.WriteString("\n\nCode context: UNAVAILABLE (scanned artifact or manifest-only finding). " +
+			"Plan from the finding metadata and authoritative guidance; mark file-level steps generically.")
+	}
 
-	raw, err := m.Complete(ctx, CompletionRequest{System: system, User: user, Temperature: 0.2})
+	raw, err := m.Complete(ctx, CompletionRequest{System: system, User: sb.String(), Temperature: 0.2})
 	if err != nil {
 		return nil, fmt.Errorf("planner: %w", err)
 	}

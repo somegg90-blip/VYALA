@@ -2,7 +2,6 @@ package remediation
 
 import (
 	"context"
-	"fmt"
 	"time"
 
 	"vyala/internal/findings"
@@ -29,17 +28,23 @@ func (p *Pipeline) Run(ctx context.Context, repoRoot string, f findings.Finding)
 
 	bundle, err := GatherContext(repoRoot, f)
 	if err != nil {
-		rec.Error = fmt.Sprintf("context: %v", err)
-		return rec, fmt.Errorf("gathering context: %w", err)
+		// Degrade gracefully instead of failing: the CBOM may have been
+		// produced elsewhere (e.g. CI) or the file moved since the scan.
+		// The planner can still produce a guidance-grounded plan from the
+		// finding alone; the degraded run is visible in telemetry.
+		bundle = nil
 	}
 	rec.Context = bundle
 
-	triage, err := runTriage(ctx, p.Model, f, bundle)
-	if err != nil {
-		rec.Error = err.Error()
-		return rec, err
+	var triage *TriageResult
+	if bundle != nil {
+		triage, err = runTriage(ctx, p.Model, f, bundle)
+		if err != nil {
+			rec.Error = err.Error()
+			return rec, err
+		}
+		rec.Triage = triage
 	}
-	rec.Triage = triage
 
 	plan, err := runPlanner(ctx, p.Model, f, bundle, triage, KB(f.Category))
 	if err != nil {
