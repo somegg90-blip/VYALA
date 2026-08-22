@@ -7,6 +7,7 @@ import (
 	"fmt"
 	"io"
 	"os"
+	"os/exec"
 	"path/filepath"
 	"strings"
 	"time"
@@ -224,9 +225,20 @@ func postComment(cbom findings.CBOM, severityThreshold string, prNumber int, hea
 }
 
 func fullScan(repoRoot string) (findings.CBOM, error) {
-	cbom, err := engine.Scan(repoRoot, nil)
-	if err != nil {
-		return findings.CBOM{}, fmt.Errorf("code scan failed: %w", err)
+	cbom := findings.CBOM{
+		Version:   findings.SchemaVersion,
+		Generated: time.Now().UTC(),
+		Findings:  []findings.Finding{},
+	}
+
+	if semgrepAvailable() {
+		codeCBOM, err := engine.Scan(repoRoot, nil)
+		if err != nil {
+			return findings.CBOM{}, fmt.Errorf("code scan failed: %w", err)
+		}
+		cbom.Findings = append(cbom.Findings, codeCBOM.Findings...)
+	} else {
+		fmt.Fprintln(os.Stderr, "vyala: warning: semgrep not found on PATH — skipping code rules scan (dependency & TLS scans still run). Install with `pip install semgrep` for full coverage.")
 	}
 
 	depFindings, err := engine.ScanManifests(repoRoot, nil)
@@ -236,6 +248,12 @@ func fullScan(repoRoot string) (findings.CBOM, error) {
 
 	cbom.Findings = append(cbom.Findings, depFindings...)
 	return cbom, nil
+}
+
+// semgrepAvailable reports whether the code-scanning engine can run.
+func semgrepAvailable() bool {
+	_, err := exec.LookPath("semgrep")
+	return err == nil
 }
 
 func diffScan(repoRoot, baseRef string) (findings.CBOM, error) {
@@ -271,11 +289,15 @@ func diffScan(repoRoot, baseRef string) (findings.CBOM, error) {
 	}
 
 	if len(codeTargets) > 0 {
-		codeCBOM, err := engine.Scan(repoRoot, codeTargets)
-		if err != nil {
-			return findings.CBOM{}, err
+		if !semgrepAvailable() {
+			fmt.Fprintln(os.Stderr, "vyala: warning: semgrep not found on PATH — skipping code rules scan in diff mode. Install with `pip install semgrep`.")
+		} else {
+			codeCBOM, err := engine.Scan(repoRoot, codeTargets)
+			if err != nil {
+				return findings.CBOM{}, err
+			}
+			cbom.Findings = append(cbom.Findings, codeCBOM.Findings...)
 		}
-		cbom.Findings = append(cbom.Findings, codeCBOM.Findings...)
 	}
 
 	if len(manifestTargets) > 0 {
