@@ -1,9 +1,11 @@
 package main
 
 import (
+	"context"
 	"encoding/json"
 	"flag"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 	"strings"
@@ -14,6 +16,7 @@ import (
 	"vyala/internal/engine"
 	"vyala/internal/findings"
 	"vyala/internal/ghcomment"
+	"vyala/internal/remediation"
 	"vyala/internal/uploader"
 )
 
@@ -52,6 +55,15 @@ func main() {
 	uploadURL := flag.String("upload-url", "", "API endpoint to upload CBOM")
 	apiKey := flag.String("api-key", "", "API key for backend upload authentication")
 
+	// ---- Experimental: LOCAL-ONLY AI remediation. Not part of CI/PR flows. ----
+	planFrom := flag.String("plan-from", "", "[experimental] generate a local AI remediation plan from this CBOM JSON")
+	findingID := flag.String("finding", "", "[experimental] finding ID to remediate (requires -plan-from)")
+	planOut := flag.String("plan-out", "", "[experimental] write the plan JSON to this path")
+	ollamaURL := flag.String("ollama-url", "http://localhost:11434", "[experimental] local Ollama server URL")
+	remModel := flag.String("remediation-model", "qwen2.5-coder:7b-instruct-q4_K_M", "[experimental] local model tag")
+	remLog := flag.String("remediation-log", ".vyala/remediations.jsonl", "[experimental] telemetry JSONL path")
+	exportPairs := flag.String("export-training-pairs", "", "[experimental] export fine-tuning pairs to this JSONL (uses -remediation-log)")
+
 	flag.Parse()
 
 	// FIX: Standardized to VYALA_API_KEY to match the GitHub Action workflow
@@ -62,6 +74,35 @@ func main() {
 	if *commentFromFile != "" {
 		if err := postCommentFromFile(*commentFromFile, *severityThreshold, *prNumber, *headSHA); err != nil {
 			fatal("posting comment from file: %v", err)
+		}
+		return
+	}
+
+	// ---- Experimental: local-only AI remediation (never runs in CI) ----
+	if *exportPairs != "" {
+		n, err := remediation.ExportTrainingPairs(*remLog, *exportPairs)
+		if err != nil {
+			fatal("exporting training pairs: %v", err)
+		}
+		fmt.Printf("Exported %d fine-tuning pair(s) to %s\n", n, *exportPairs)
+		return
+	}
+	if *planFrom != "" {
+		repoRoot, perr := filepath.Abs(*path)
+		if perr != nil {
+			fatal("resolving path: %v", perr)
+		}
+		if err := runRemediationPlan(remediationPlanOpts{
+			cbolPath:  *planFrom,
+			findingID: *findingID,
+			repoRoot:  repoRoot,
+			planOut:   *planOut,
+			ollamaURL: *ollamaURL,
+			model:     *remModel,
+			logPath:   *remLog,
+		}); err != nil {
+			fmt.Fprintf(os.Stderr, "vyala: warning: %v\n", err)
+			os.Exit(1)
 		}
 		return
 	}
@@ -273,4 +314,102 @@ func diffScan(repoRoot, baseRef string) (findings.CBOM, error) {
 func fatal(format string, a ...interface{}) {
 	fmt.Fprintf(os.Stderr, "vyala: "+format+"\n", a...)
 	os.Exit(1)
+}
+
+type remediationPlanOpts struct {
+	cbolPath, findingID, repoRoot, planOut, ollamaURL, model, logPath string
+}
+
+// runRemediationPlan is the experimental local-only AI remediation entrypoint.
+func runRemediationPlan(o remediationPlanOpts) error {
+	if o.findingID == "" {
+		return fmt.Errorf("-finding is required with -plan-from")
+	}
+	data, err := os.ReadFile(o.cbolPath)
+	if err != nil {
+		return fmt.Errorf("reading CBOM: %w", err)
+	}
+	var cbom findings.CBOM
+	if err := json.Unmarshal(data, &cbom); err != nil {
+		return fmt.Errorf("parsing CBOM: %w", err)
+	}
+
+	var target *findings.Finding
+	for i := range cbom.Findings {
+		if cbom.Findings[i].ID == o.findingID {
+			target = &cbom.Findings[i]
+			break
+		}
+	}
+	if target == nil {
+		return fmt.Errorf("finding %q not found in %s", o.findingID, o.cbolPath)
+	}
+
+	fmt.Printf("VYALA AI Remediation (experimental, LOCAL-ONLY)\n")
+	fmt.Printf("  model:    %s @ %s\n", o.model, o.ollamaURL)
+	fmt.Printf("  finding:  %s (%s)\n", target.ID, target.Category)
+	fmt.Printf("  location: %s:%d\n\n", target.File, target.Line)
+
+	client := remediation.NewOllamaClient(o.ollamaURL, o.model)
+	pipe := &remediation.Pipeline{Model: client}
+
+	ctx, cancel := context.WithTimeout(context.Background(), 10*time.Minute)
+	defer cancel()
+
+	rec, err := pipe.Run(ctx, o.repoRoot, *target)
+	logErr := remediation.NewTelemetryLog(o.logPath).Append(rec) // capture even failures for training data
+	if logErr != nil {
+		fmt.Fprintf(os.Stderr, "vyala: warning: telemetry append failed: %v\n", logErr)
+	}
+	if err != nil {
+		return err
+	}
+
+	renderPlan(os.Stdout, rec)
+
+	if o.planOut != "" {
+		b, jerr := json.MarshalIndent(rec, "", "  ")
+		if jerr != nil {
+			return jerr
+		}
+		if werr := os.WriteFile(o.planOut, b, 0644); werr != nil {
+			return fmt.Errorf("writing plan: %w", werr)
+		}
+		fmt.Printf("\nFull record written to %s\nTelemetry appended to %s\n", o.planOut, o.logPath)
+	}
+	return nil
+}
+
+func renderPlan(w io.Writer, rec *remediation.RemediationRecord) {
+	p, t := rec.Plan, rec.Triage
+	if p == nil || t == nil {
+		return
+	}
+	fmt.Fprintf(w, "Triage: %s (priority %s)\n", t.Complexity, t.Priority)
+	for _, n := range t.RiskNotes {
+		fmt.Fprintf(w, "  ! %s\n", n)
+	}
+	fmt.Fprintf(w, "\n%s\n\nSteps:\n", p.Summary)
+	for i, s := range p.Steps {
+		fmt.Fprintf(w, "  %d. %s\n", i+1, s.Title)
+		fmt.Fprintf(w, "     %s\n", s.Detail)
+		if s.File != "" {
+			fmt.Fprintf(w, "     file: %s\n", s.File)
+		}
+		if s.CodeBefore != "" || s.CodeAfter != "" {
+			fmt.Fprintf(w, "     - %s\n     + %s\n", s.CodeBefore, s.CodeAfter)
+		}
+	}
+	if len(p.Risks) > 0 {
+		fmt.Fprintln(w, "\nRisks:")
+		for _, r := range p.Risks {
+			fmt.Fprintf(w, "  - %s\n", r)
+		}
+	}
+	if len(p.References) > 0 {
+		fmt.Fprintln(w, "\nReferences:")
+		for _, r := range p.References {
+			fmt.Fprintf(w, "  - %s\n", r)
+		}
+	}
 }
